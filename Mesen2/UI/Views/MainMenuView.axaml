@@ -1,0 +1,58 @@
+﻿<UserControl
+	xmlns="https://github.com/avaloniaui"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	xmlns:vm="using:Mesen.ViewModels"
+	xmlns:c="using:Mesen.Controls"
+	xmlns:cfg="using:Mesen.Config"
+	xmlns:l="using:Mesen.Localization"
+	mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="650"
+	VerticalAlignment="Top"
+	x:DataType="vm:MainMenuViewModel"
+	x:Class="Mesen.Views.MainMenuView"
+>
+	<Design.DataContext>
+		<vm:MainMenuViewModel />
+	</Design.DataContext>
+
+	<DockPanel Background="{DynamicResource MesenMenuBackground}">
+		<c:MesenMenu Name="ActionMenu" DockPanel.Dock="Left">
+			<MenuItem Header="{l:Translate mnuFile}" ItemsSource="{Binding FileMenuItems}" />
+			<MenuItem Header="{l:Translate mnuGame}" ItemsSource="{Binding GameMenuItems}" />
+			<MenuItem Header="{l:Translate mnuOptions}" ItemsSource="{Binding OptionsMenuItems}" />
+			<MenuItem Header="{l:Translate mnuTools}" ItemsSource="{Binding ToolsMenuItems}" SubmenuOpened="mnuTools_Opened" />
+			<MenuItem Header="{l:Translate mnuDebug}" ItemsSource="{Binding DebugMenuItems}" />
+			<MenuItem Header="{l:Translate mnuHelp}" ItemsSource="{Binding HelpMenuItems}" />
+		</c:MesenMenu>
+
+		<!-- 菜单右侧显示加载的软盘镜像文件 -->
+		<Border Name="FloppyPanel" DockPanel.Dock="Left" Background="Transparent" Margin="1,0,1,0" Padding="0">
+			<Border.Styles>
+				<!-- Apply hover background only to the named inner content area so the separator line is not covered -->
+				<Style Selector="Border:pointerover > #FloppyContent" x:SetterTargetType="Border">
+					<Setter Property="Background" Value="#B0A0C8FF"/>
+				</Style>
+			</Border.Styles>
+
+			<Border.ContextMenu>
+				<ContextMenu>
+					<MenuItem Header="弹出软盘" Click="EjectFloppy_Click" />
+				</ContextMenu>
+			</Border.ContextMenu>
+
+			<StackPanel Name="FloppyInner" Orientation="Horizontal" VerticalAlignment="Center" Background="Transparent">
+				<!-- 竖线分隔符，背景不应覆盖它 -->
+				<Rectangle Width="1" Height="18" Fill="#8A8A8A" Margin="0" VerticalAlignment="Center" />
+				<!-- 右侧内容区：悬停背景只作用到这里（FloppyContent） -->
+				<Border Name="FloppyContent" VerticalAlignment="Center" Background="Transparent" Margin="3,0,0,0" Padding="2,4">
+					<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Background="Transparent">
+						<TextBlock Name="FloppyStatusText" FontWeight="Bold" Text="{Binding FloppyStatus}" Margin="6,0,0,0" />
+					</StackPanel>
+				</Border>
+			</StackPanel>
+		</Border>
+
+		<Panel Name="MenuPanel" />
+	</DockPanel>
+</UserControl>

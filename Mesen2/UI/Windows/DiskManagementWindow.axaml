@@ -1,0 +1,10 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Mesen.Windows.DiskManagementWindow"
+        Width="400" Height="200"
+        Title="磁盘管理">
+    <Grid>
+        <!-- 空的对话框，保留最小可见内容 -->
+        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray">(空)</TextBlock>
+    </Grid>
+</Window>

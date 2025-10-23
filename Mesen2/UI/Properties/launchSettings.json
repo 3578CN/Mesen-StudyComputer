@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Mesen": {
+      "commandName": "Project",
+      "commandLineArgs": "bbk_bios10.nes",
+      "workingDirectory": "C:\\Users\\LION\\OneDrive\\Desktop",
+      "nativeDebugging": true
+    }
+  }
+}
