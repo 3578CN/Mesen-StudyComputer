@@ -16,3 +16,4 @@ dotnet publish -c Release -r win-x64 -p:PublishAot=true -p:PublishSingleFile=fal
 下一步计划：
 - 磁盘管理，文件管理器的开发。
 - 键盘映射优化，有些键位没反应的问题。
+- 开始sb2k的 mapper支持开发。
