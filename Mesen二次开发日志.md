@@ -1,8 +1,7 @@
 ## Aot 发布命令
 
-先用 msbuild 编译：
+在项目目录下先用 msbuild 编译：
 ```bash
-cd D:\Git代码\Mesen(Github)
 msbuild Mesen.sln /p:Configuration=Release /p:Platform=x64
 ```
 再执行 AOT 发布：
