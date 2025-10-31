@@ -1,12 +1,10 @@
 ﻿/*------------------------------------------------------------------------
 名称：BBK FD1 控制设备头文件
-说明：移植自 VirtuaNES 的 EXPAD_BBK_FD1，实现 BBK 专用的键盘矩阵与
-	  EM84502 鼠标协议（用于 BBK BIOS）。该实现面向 BBK BIOS，保留
-	  主要行为以使 BIOS 能够读取键盘/鼠标数据。
+说明：实现 BBK 专用的键盘矩阵与EM84502 鼠标协议（用于 BBK BIOS）。
 作者：Lion
 邮箱：chengbin@3578.cn
 日期：2025-10-12
-备注：本文件为 Mesen 端适配实现，注释采用中文，保留原始技术缩写。
+备注：
 ------------------------------------------------------------------------*/
 
 #pragma once
@@ -46,7 +44,7 @@ private:
 	uint8_t _emTxCount = 0; // number of bytes left to send (1..4)
 	uint8_t _emData[3] = { 0 };
 
-	// 按键位定义：列出 VirtuaNES 中使用到的 DIK_* 键并为其分配位编号
+	// 按键位定义：列出按键并为其分配位编号。
 	enum Buttons
 	{
 		K_4, K_G, K_F, K_C, K_F2, K_E, K_5, K_V,
@@ -64,7 +62,7 @@ private:
 		ButtonsCount
 	};
 
-	// 生成 EM84502 波形编码（移植自 VirtuaNES 的 MouseGenTxData）
+	// 生成 EM84502 波形编码。
 	static uint32_t MouseGenTxData(uint8_t data)
 	{
 		int i;
@@ -201,7 +199,7 @@ public:
 				}
 			}
 
-			// 精确的键盘矩阵映射，直接移植自 VirtuaNES 的 Read4017 中的 ScanNo 分支
+			// 精确的键盘矩阵映射
 			switch(_scanNo) {
 				case 1:
 					if(_bOut) {

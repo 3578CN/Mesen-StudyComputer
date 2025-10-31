@@ -28,10 +28,6 @@ void MapperBbk::InitMapper()
 		// 如果用户没有通过 UI 绑定任何 MapperInput 按键，构造一个合理的默认映射
 		if(mappings.empty()) {
 			KeyMapping def;
-			// 完整默认 CustomKeys 映射，按 Bbk_Fd1::Buttons 顺序尽量填入常见键名
-			// 不可识别或不需要的槽保持为 0
-			// 手动按需设置关键索引（方向/回车/空格/控制等），其余按可读名称尝试转换
-
 			// 显式为每个 CustomKeys 槽赋值，使用 KeyManager::GetKeyCode("Name") 风格，按 Bbk_Fd1::Buttons 顺序
 			def.CustomKeys[0] = KeyManager::GetKeyCode("4");
 			def.CustomKeys[1] = KeyManager::GetKeyCode("G");
@@ -53,10 +49,10 @@ void MapperBbk::InitMapper()
 
 			def.CustomKeys[16] = KeyManager::GetKeyCode("Insert");
 			def.CustomKeys[17] = KeyManager::GetKeyCode("Backspace");
-			def.CustomKeys[18] = KeyManager::GetKeyCode("PageDown");
-			def.CustomKeys[19] = KeyManager::GetKeyCode("Right");
+			def.CustomKeys[18] = KeyManager::GetKeyCode("Page Down");
+			def.CustomKeys[19] = KeyManager::GetKeyCode("Right Arrow");
 			def.CustomKeys[20] = KeyManager::GetKeyCode("F8");
-			def.CustomKeys[21] = KeyManager::GetKeyCode("PageUp");
+			def.CustomKeys[21] = KeyManager::GetKeyCode("Page Up");
 			def.CustomKeys[22] = KeyManager::GetKeyCode("Delete");
 			def.CustomKeys[23] = KeyManager::GetKeyCode("Home");
 
@@ -71,21 +67,21 @@ void MapperBbk::InitMapper()
 
 			def.CustomKeys[32] = KeyManager::GetKeyCode("]");
 			def.CustomKeys[33] = KeyManager::GetKeyCode("Enter");
-			def.CustomKeys[34] = KeyManager::GetKeyCode("Up");
-			def.CustomKeys[35] = KeyManager::GetKeyCode("Left");
+			def.CustomKeys[34] = KeyManager::GetKeyCode("Up Arrow");
+			def.CustomKeys[35] = KeyManager::GetKeyCode("Left Arrow");
 			def.CustomKeys[36] = KeyManager::GetKeyCode("F7");
 			def.CustomKeys[37] = KeyManager::GetKeyCode("[");
-			def.CustomKeys[38] = KeyManager::GetKeyCode("Backslash");
-			def.CustomKeys[39] = KeyManager::GetKeyCode("Down");
+			def.CustomKeys[38] = KeyManager::GetKeyCode("\\");
+			def.CustomKeys[39] = KeyManager::GetKeyCode("Down Arrow");
 
 			def.CustomKeys[40] = KeyManager::GetKeyCode("Q");
-			def.CustomKeys[41] = KeyManager::GetKeyCode("CapsLock");
+			def.CustomKeys[41] = KeyManager::GetKeyCode("Caps Lock");
 			def.CustomKeys[42] = KeyManager::GetKeyCode("Z");
 			def.CustomKeys[43] = KeyManager::GetKeyCode("Tab");
-			def.CustomKeys[44] = KeyManager::GetKeyCode("Escape");
+			def.CustomKeys[44] = KeyManager::GetKeyCode("Esc");
 			def.CustomKeys[45] = KeyManager::GetKeyCode("A");
 			def.CustomKeys[46] = KeyManager::GetKeyCode("1");
-			def.CustomKeys[47] = KeyManager::GetKeyCode("LControl");
+			def.CustomKeys[47] = KeyManager::GetKeyCode("Left Ctrl");
 
 			def.CustomKeys[48] = KeyManager::GetKeyCode("7");
 			def.CustomKeys[49] = KeyManager::GetKeyCode("Y");
@@ -103,8 +99,8 @@ void MapperBbk::InitMapper()
 			def.CustomKeys[60] = KeyManager::GetKeyCode("F6");
 			def.CustomKeys[61] = KeyManager::GetKeyCode("P");
 			def.CustomKeys[62] = KeyManager::GetKeyCode("=");
-			def.CustomKeys[63] = KeyManager::GetKeyCode("LShift");
-			def.CustomKeys[64] = KeyManager::GetKeyCode("RShift");
+			def.CustomKeys[63] = KeyManager::GetKeyCode("Left Shift");
+			def.CustomKeys[64] = KeyManager::GetKeyCode("Right Shift");
 
 			def.CustomKeys[65] = KeyManager::GetKeyCode("T");
 			def.CustomKeys[66] = KeyManager::GetKeyCode("H");
@@ -117,17 +113,17 @@ void MapperBbk::InitMapper()
 
 			def.CustomKeys[73] = KeyManager::GetKeyCode("F11");
 			def.CustomKeys[74] = KeyManager::GetKeyCode("F12");
-			def.CustomKeys[75] = KeyManager::GetKeyCode("Subtract");
-			def.CustomKeys[76] = KeyManager::GetKeyCode("Add");
-			def.CustomKeys[77] = KeyManager::GetKeyCode("Multiply");
+			def.CustomKeys[75] = KeyManager::GetKeyCode("Numpad -");
+			def.CustomKeys[76] = KeyManager::GetKeyCode("Numpad +");
+			def.CustomKeys[77] = KeyManager::GetKeyCode("Numpad *");
 			def.CustomKeys[78] = KeyManager::GetKeyCode("F10");
-			def.CustomKeys[79] = KeyManager::GetKeyCode("Divide");
-			def.CustomKeys[80] = KeyManager::GetKeyCode("NumLock");
+			def.CustomKeys[79] = KeyManager::GetKeyCode("Numpad /");
+			def.CustomKeys[80] = KeyManager::GetKeyCode("Num Lock");
 
-			def.CustomKeys[81] = KeyManager::GetKeyCode("Grave");
-			def.CustomKeys[82] = KeyManager::GetKeyCode("LAlt");
+			def.CustomKeys[81] = KeyManager::GetKeyCode("`");
+			def.CustomKeys[82] = KeyManager::GetKeyCode("Left Alt");
 			def.CustomKeys[83] = KeyManager::GetKeyCode("F9");
-			def.CustomKeys[84] = KeyManager::GetKeyCode("Decimal");
+			def.CustomKeys[84] = KeyManager::GetKeyCode("Numpad .");
 			mappings.push_back(def);
 		}
 		_bbkInput->SetKeyMappings(mappings);
@@ -335,6 +331,7 @@ void MapperBbk::WriteRegister(uint16_t addr, uint8_t value)
 		if(fdc) {
 			bDiskAccess = true;
 			fdc->Write(nPort, value);
+			fdc->SaveDiskImage();
 		}
 
 		return;
