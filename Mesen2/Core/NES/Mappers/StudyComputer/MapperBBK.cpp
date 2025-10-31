@@ -632,7 +632,7 @@ bool MapperBbk::CheckIRQ()
 
 void MapperBbk::HSync(int nScanline)
 {
-	//OutputDebug("nScanline=%d\n", nScanline);
+	//DebugPrint("nScanline=%d\n", nScanline);
 	if(0 == nScanline && bSplitMode) {
 		uint8_t page;
 

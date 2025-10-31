@@ -17,7 +17,7 @@
 // 描述：构造 SB2K 专用 UM6576 PPU。
 Sb2kPpu::Sb2kPpu(NesConsole* console) : NesPpu<Sb2kPpu>(console)
 {
-	OutputDebug("初始化ppu");
+	DebugPrint("初始化ppu");
 }
 
 void* Sb2kPpu::OnBeforeSendFrame()

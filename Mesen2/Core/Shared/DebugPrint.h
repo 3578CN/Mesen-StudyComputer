@@ -1,28 +1,28 @@
 ﻿/*------------------------------------------------------------------------
-名称：OutputDebug 调试输出封装
-说明：提供简洁的 OutputDebug 函数封装，向调试输出窗口写入以 "[Mesen NowTime][MyClass::MyMethod]" 开头的日志行。
+名称：DebugPrint 调试输出封装
+说明：提供简洁的 DebugPrint 函数封装，向调试输出窗口写入以 "[Mesen NowTime][MyClass::MyMethod]" 开头的日志行。
      新增对基本类型（bool、整型、浮点、const char*、std::string 等）直接传入的支持，
-     所有重载最终调用 OutputDebugInternal。
+     所有重载最终调用 DebugPrintInternal。
 作者：Lion
 邮箱：chengbin@3578.cn
 日期：2025-10-04
-备注：使用 OutputDebugStringA 输出窄字符串，若输入不包含换行则自动追加换行。
+备注：使用 DebugPrintStringA 输出窄字符串，若输入不包含换行则自动追加换行。
 ------------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------------------------------------------------------
 用法（每行一条：用法 -> 示例输出）
 时间与函数名为示例占位，运行时以实际值为准。
 ======================================================================================================================
-OutputDebug("plain message")						-> [Mesen 12:34:56.789][MyClass::MyMethod] plain message
-OutputDebug("Value=%d, name=%s", 42, "foo")	-> [Mesen 12:34:56.789][MyClass::MyMethod] Value=42, name=foo
-OutputDebug("error: %s", "disk full")			->	[Mesen 12:34:56.789][MyClass::MyMethod] error: disk full
-OutputDebug(std::string("hello"))				->	[Mesen 12:34:56.789][MyClass::MyMethod] hello
-OutputDebug(true)										->	[Mesen 12:34:56.789][MyClass::MyMethod] true
-OutputDebug(false)									->	[Mesen 12:34:56.789][MyClass::MyMethod] false
-OutputDebug(123)										->	[Mesen 12:34:56.789][MyClass::MyMethod] 123
-OutputDebug(3.14159)									->	[Mesen 12:34:56.789][MyClass::MyMethod] 3.14159
-OutputDebug(MyEnum::Value)							->	[Mesen 12:34:56.789][MyClass::MyMethod] 0
-OutputDebug(myObj)									->	[Mesen 12:34:56.789][MyClass::MyMethod] <myObj 的 operator<< 输出>
+DebugPrint("plain message")						-> [Mesen 12:34:56.789][MyClass::MyMethod] plain message
+DebugPrint("Value=%d, name=%s", 42, "foo")	-> [Mesen 12:34:56.789][MyClass::MyMethod] Value=42, name=foo
+DebugPrint("error: %s", "disk full")			->	[Mesen 12:34:56.789][MyClass::MyMethod] error: disk full
+DebugPrint(std::string("hello"))				->	[Mesen 12:34:56.789][MyClass::MyMethod] hello
+DebugPrint(true)										->	[Mesen 12:34:56.789][MyClass::MyMethod] true
+DebugPrint(false)									->	[Mesen 12:34:56.789][MyClass::MyMethod] false
+DebugPrint(123)										->	[Mesen 12:34:56.789][MyClass::MyMethod] 123
+DebugPrint(3.14159)									->	[Mesen 12:34:56.789][MyClass::MyMethod] 3.14159
+DebugPrint(MyEnum::Value)							->	[Mesen 12:34:56.789][MyClass::MyMethod] 0
+DebugPrint(myObj)									->	[Mesen 12:34:56.789][MyClass::MyMethod] <myObj 的 operator<< 输出>
 ---------------------------------------------------------------------------------------------------------------------*/
 #pragma once
 
@@ -47,7 +47,7 @@ extern "C" inline void __stdcall OutputDebugStringA(const char *lpOutputString) 
 /// <summary>
 /// 内部实现：接收调用处的函数签名 caller 并输出消息。
 /// </summary>
-inline void OutputDebugInternal(const char *caller, const std::string &msg)
+inline void DebugPrintInternal(const char *caller, const std::string &msg)
 {
     // 获取当前本地时间并格式化为 HH:MM:SS.mmm（含毫秒）
     using clock = std::chrono::system_clock;
@@ -96,22 +96,22 @@ inline void OutputDebugInternal(const char *caller, const std::string &msg)
     if (out.empty() || out.back() != '\n')
         out.push_back('\n');
 
-    // 直接调用窄字符版本的 OutputDebugString
-    OutputDebugStringA(out.c_str());
+    // 直接调用窄字符版本的 DebugPrintString
+	 OutputDebugStringA(out.c_str());
 }
 
 // ------------------------------------------------------------
-// 类型友好的外层 API：OutputDebugFmt 系列重载
+// 类型友好的外层 API：DebugPrintFmt 系列重载
 // ------------------------------------------------------------
 
 // 支持 printf 风格格式化的重载（可变参数）
-// 使用 vsnprintf 生成临时字符串，再传给 OutputDebugInternal。
+// 使用 vsnprintf 生成临时字符串，再传给 DebugPrintInternal。
 // 注意：确保传入的格式化字符串与参数匹配，非宽字符（窄字符串）。
-inline void OutputDebugFmt(const char *caller, const char *fmt, ...)
+inline void DebugPrintFmt(const char *caller, const char *fmt, ...)
 {
     if (!fmt)
     {
-        OutputDebugInternal(caller, "(null)");
+        DebugPrintInternal(caller, "(null)");
         return;
     }
 
@@ -127,7 +127,7 @@ inline void OutputDebugFmt(const char *caller, const char *fmt, ...)
     if (len < 0)
     {
         va_end(args);
-        OutputDebugInternal(caller, "(format error)");
+        DebugPrintInternal(caller, "(format error)");
         return;
     }
 
@@ -136,82 +136,82 @@ inline void OutputDebugFmt(const char *caller, const char *fmt, ...)
     std::vsnprintf(&buf[0], buf.size() + 1, fmt, args); // 包括终止符
     va_end(args);
 
-    OutputDebugInternal(caller, buf);
+    DebugPrintInternal(caller, buf);
 }
 
 // 字符串版本（std::string）
-inline void OutputDebugFmt(const char *caller, const std::string &msg)
+inline void DebugPrintFmt(const char *caller, const std::string &msg)
 {
-    OutputDebugInternal(caller, msg);
+    DebugPrintInternal(caller, msg);
 }
 
 // bool 版本：输出 "true"/"false"
-inline void OutputDebugFmt(const char *caller, bool v)
+inline void DebugPrintFmt(const char *caller, bool v)
 {
-    OutputDebugInternal(caller, v ? "true" : "false");
+    DebugPrintInternal(caller, v ? "true" : "false");
 }
 
 // 整型通用处理：使用 enable_if 区分整型与枚举
 template <typename T>
 inline typename std::enable_if<std::is_integral<T>::value && !std::is_same<T, bool>::value>::type
-OutputDebugFmt(const char *caller, T v)
+DebugPrintFmt(const char *caller, T v)
 {
     std::ostringstream ss;
     ss << v;
-    OutputDebugInternal(caller, ss.str());
+    DebugPrintInternal(caller, ss.str());
 }
 
 // 浮点数通用处理
 template <typename T>
 inline typename std::enable_if<std::is_floating_point<T>::value>::type
-OutputDebugFmt(const char *caller, T v)
+DebugPrintFmt(const char *caller, T v)
 {
     std::ostringstream ss;
     ss << v;
-    OutputDebugInternal(caller, ss.str());
+    DebugPrintInternal(caller, ss.str());
 }
 
 // 枚举友好处理（输出为整数）
 // 如果需要更友好的枚举名称，可在调用处自行转换
 template <typename T>
 inline typename std::enable_if<std::is_enum<T>::value>::type
-OutputDebugFmt(const char *caller, T v)
+DebugPrintFmt(const char *caller, T v)
 {
     using UT = typename std::underlying_type<T>::type;
     std::ostringstream ss;
     ss << static_cast<UT>(v);
-    OutputDebugInternal(caller, ss.str());
+    DebugPrintInternal(caller, ss.str());
 }
 
 // 其他通用类型（fallback）：使用 std::ostringstream 尝试格式化
 template <typename T>
 inline typename std::enable_if<!std::is_arithmetic<T>::value && !std::is_enum<T>::value>::type
-OutputDebugFmt(const char *caller, const T &v)
+DebugPrintFmt(const char *caller, const T &v)
 {
     std::ostringstream ss;
     ss << v; // 依赖类型提供 operator<<
-    OutputDebugInternal(caller, ss.str());
+    DebugPrintInternal(caller, ss.str());
 }
 
 // 宏保留：根据编译器展开适当的内置函数签名
 #if defined(_MSC_VER)
 /*
-OutputDebug 调试输出
+DebugPrint 调试输出
 
-OutputDebug("plain message")						->[Mesen 12:34 : 56.789][MyClass::MyMethod] plain message
-OutputDebug("Value=%d, name=%s", 42, "foo")	->[Mesen 12:34 : 56.789][MyClass::MyMethod] Value = 42, name = foo
-OutputDebug("error: %s", "disk full")			->[Mesen 12:34 : 56.789][MyClass::MyMethod] error: disk full
-OutputDebug(std::string("hello"))				->[Mesen 12:34 : 56.789][MyClass::MyMethod] hello
-OutputDebug(true)										->[Mesen 12:34 : 56.789][MyClass::MyMethod] true
-OutputDebug(false)									->[Mesen 12:34 : 56.789][MyClass::MyMethod] false
-OutputDebug(123)										->[Mesen 12:34 : 56.789][MyClass::MyMethod] 123
-OutputDebug(3.14159)									->[Mesen 12:34 : 56.789][MyClass::MyMethod] 3.14159
-OutputDebug(MyEnum::Value)							->[Mesen 12:34 : 56.789][MyClass::MyMethod] 0
-OutputDebug(myObj)									->[Mesen 12:34 : 56.789][MyClass::MyMethod] <myObj 的 operator<< 输出>
+DebugPrint("plain message")						->[Mesen 12:34 : 56.789][MyClass::MyMethod] plain message
+DebugPrint("Value=%d, name=%s", 42, "foo")	->[Mesen 12:34 : 56.789][MyClass::MyMethod] Value = 42, name = foo
+DebugPrint("error: %s", "disk full")			->[Mesen 12:34 : 56.789][MyClass::MyMethod] error: disk full
+DebugPrint(std::string("hello"))				->[Mesen 12:34 : 56.789][MyClass::MyMethod] hello
+DebugPrint(true)										->[Mesen 12:34 : 56.789][MyClass::MyMethod] true
+DebugPrint(false)									->[Mesen 12:34 : 56.789][MyClass::MyMethod] false
+DebugPrint(123)										->[Mesen 12:34 : 56.789][MyClass::MyMethod] 123
+DebugPrint(3.14159)									->[Mesen 12:34 : 56.789][MyClass::MyMethod] 3.14159
+DebugPrint(MyEnum::Value)							->[Mesen 12:34 : 56.789][MyClass::MyMethod] 0
+DebugPrint(myObj)									->[Mesen 12:34 : 56.789][MyClass::MyMethod] <myObj 的 operator<< 输出>
 */
-#define OutputDebug(...) OutputDebugFmt(__FUNCSIG__, __VA_ARGS__)
+#define DebugPrint(...) DebugPrintFmt(__FUNCSIG__, __VA_ARGS__)
 #elif defined(__GNUC__) || defined(__clang__)
-#define OutputDebug(...) OutputDebugFmt(__PRETTY_FUNCTION__, __VA_ARGS__)
+#define DebugPrint(...) DebugPrintFmt(__PRETTY_FUNCTION__, __VA_ARGS__)
 #else
-#define OutputDebug(...) OutputDebugFmt(__func__, __VA_ARGS__)
+#define DebugPrint(...) DebugPrintFmt(__func__, __VA_ARGS__)
 #endif

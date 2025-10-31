@@ -2994,7 +2994,6 @@
     <ClInclude Include="NES\Mappers\StudyComputer\MapperBbk.h">
       <Filter>NES\Mappers\StudyComputer</Filter>
     </ClInclude>
-    <ClInclude Include="OutputDebug.h" />
     <ClInclude Include="NES\Mappers\StudyComputer\Lpc_D6.h">
       <Filter>NES\Mappers\StudyComputer</Filter>
     </ClInclude>
@@ -3003,6 +3002,9 @@
     </ClInclude>
     <ClInclude Include="NES\Mappers\StudyComputer\FloppyDriveController.h">
       <Filter>NES\Mappers\StudyComputer</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\DebugPrint.h">
+      <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

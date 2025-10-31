@@ -34,7 +34,7 @@
 #include <algorithm>
 #include <assert.h>
 
-#include "OutputDebug.h"
+#include "Shared/DebugPrint.h"
 
 #include "Utilities/UTF8Util.h"
 
