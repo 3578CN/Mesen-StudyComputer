@@ -2,6 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(_MSC_VER)
+#include <share.h>
+#include <io.h>
+#include <fcntl.h>
+#endif
 
 #include "FloppyDriveController.h"
 
@@ -114,7 +119,14 @@ int FloppyDriveController::LoadDiskImage(const char* filePath)
 
 	// try to open disk image for read/write (do not truncate)
 #if defined(_MSC_VER)
-	if(::fopen_s(&fp, filePath, "rb+") != 0 || fp == nullptr) {
+	// 使用 _sopen_s 并传入 _SH_DENYNO，避免独占打开（允许共享读写）
+	int fd;
+	errno_t err = _sopen_s(&fd, filePath, _O_RDWR | _O_BINARY, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+	if(err != 0 || fd == -1) {
+		return 0;
+	}
+	if(!(fp = _fdopen(fd, "rb+"))) {
+		_close(fd);
 		return 0;
 	}
 #else
@@ -321,12 +333,14 @@ void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 				} else {
 					bDiskChanged = 1;
 				}
-				bFdcDataBytes--;
-				if(0 == bFdcDataBytes) {
-					bFdcCycle = 0;
-					bFdcPhase = FDC_PH_RESULT;
-					nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
-				}
+					bFdcDataBytes--;
+					if(0 == bFdcDataBytes) {
+						// 扇区写入完成，刷新 stdio 缓冲以便其它进程能看到变化
+						if(pDiskFile) ::fflush(pDiskFile);
+						bFdcCycle = 0;
+						bFdcPhase = FDC_PH_RESULT;
+						nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
+					}
 			break;
 		case 2: // 3F2: FDCDRQPortI/FDCCtrlPortO
 			// O: D5 : Drv B motor
@@ -396,10 +410,12 @@ void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 							}
 							bFdcDataBytes--;
 							if(0 == bFdcDataBytes) {
+								// 扇区写入完成，刷新缓冲，通知 host
+								if(pDiskFile) ::fflush(pDiskFile);
 								bFdcCycle = 0;
 								bFdcPhase = FDC_PH_RESULT;
 								nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
-
+							
 								bFdcIrq = 0;
 							}
 							break;
@@ -708,6 +724,8 @@ void FloppyDriveController::FdcFormatTrack(FloppyDriveController* thiz)
 		::fseek(thiz->pDiskFile, thiz->nCurrentLBA * 512, SEEK_SET);
 		::fwrite(buf, 512, 1, thiz->pDiskFile);
 		thiz->bDirty = 1;
+		// 格式化写入后立即刷新以便其它程序能看到变化
+		::fflush(thiz->pDiskFile);
 	} else {
 		// 没有磁盘，忽略
 	}
