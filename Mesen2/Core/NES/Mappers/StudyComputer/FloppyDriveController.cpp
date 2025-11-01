@@ -88,11 +88,11 @@ FloppyDriveController::FloppyDriveController()
 
 	nFdcCylinder = 0;
 
-	pFdcDataPtr = 0;
+    nFdcDataOffset = 0;
 
-	bDirty = 0;
-	nDiskSize = 0;
-	pDiskImage = 0;
+    bDirty = 0;
+    nDiskSize = 0;
+    pDiskFile = nullptr;
 
 	nCurrentLBA = 0;
 
@@ -105,20 +105,20 @@ FloppyDriveController::FloppyDriveController()
 
 FloppyDriveController::~FloppyDriveController()
 {
-	if(pDiskImage) free(pDiskImage);
+	if(pDiskFile) fclose(pDiskFile);
 }
 
 int FloppyDriveController::LoadDiskImage(const char* filePath)
 {
 	FILE* fp;
 
-	// try to load disk image
+	// try to open disk image for read/write (do not truncate)
 #if defined(_MSC_VER)
-	if(::fopen_s(&fp, filePath, "rb") != 0 || fp == nullptr) {
+	if(::fopen_s(&fp, filePath, "rb+") != 0 || fp == nullptr) {
 		return 0;
 	}
 #else
-	if(!(fp = ::fopen(filePath, "rb"))) {
+	if(!(fp = ::fopen(filePath, "rb+"))) {
 		return 0;
 	}
 #endif
@@ -127,15 +127,9 @@ int FloppyDriveController::LoadDiskImage(const char* filePath)
 	nDiskSize = ::ftell(fp);
 	::fseek(fp, 0, SEEK_SET);
 
-	if(pDiskImage) free(pDiskImage);
-
-	if(!(pDiskImage = (unsigned char*)malloc(nDiskSize))) {
-		fclose(fp);
-		return 0;
-	}
-
-	::fread(pDiskImage, nDiskSize, 1, fp);
-	fclose(fp);
+	// close previous file if any
+	if(pDiskFile) fclose(pDiskFile);
+	pDiskFile = fp;
 
 	bDirty = 0;
 #if defined(_MSC_VER)
@@ -148,6 +142,9 @@ int FloppyDriveController::LoadDiskImage(const char* filePath)
 	// 标记磁盘已改变（插入）
 	bDiskChanged = 1;
 
+	// reset data transfer offset
+	nFdcDataOffset = 0;
+
 	return 1;
 }
 
@@ -156,26 +153,26 @@ int FloppyDriveController::LoadDiskImage(const char* filePath)
 int FloppyDriveController::Eject()
 {
 	// 没有加载磁盘
-	if(!pDiskImage) {
+	if(!pDiskFile) {
 		// 没有可弹出的磁盘
 		return 0;
 	}
 
-	// 如果有修改，尝试保存
+	// 如果有修改，尝试保存（flush）
 	if(bDirty) {
 		SaveDiskImage();
 	}
 
-	// 释放镜像缓冲区
-	free(pDiskImage);
-	pDiskImage = nullptr;
+	// 关闭文件句柄
+	fclose(pDiskFile);
+	pDiskFile = nullptr;
 	nDiskSize = 0;
 	szDiskName[0] = '\0';
 
 	// 重置状态
 	bDirty = 0;
 	nCurrentLBA = 0;
-	pFdcDataPtr = nullptr;
+	nFdcDataOffset = 0;
 	bFdcDataBytes = 0;
 	bFdcCycle = 0;
 	bFdcPhase = FDC_PH_IDLE;
@@ -195,27 +192,14 @@ int FloppyDriveController::Eject()
 
 int FloppyDriveController::SaveDiskImage()
 {
-	FILE* fp;
+	// 直接对打开的镜像文件执行刷新
+	if(!pDiskFile) return 0;
 
-#if defined(_MSC_VER)
-	if(::fopen_s(&fp, szDiskName, "wb") != 0 || fp == nullptr) {
+	if(::fflush(pDiskFile) != 0) {
 		return 0;
 	}
-#else
-	if(!(fp = ::fopen(szDiskName, "wb"))) {
-		return 0;
-	}
-#endif
-
-	if(!::fwrite(pDiskImage, nDiskSize, 1, fp)) {
-		fclose(fp);
-		return 0;
-	}
-
-	fclose(fp);
 
 	bDirty = 0;
-
 	return 1;
 }
 
@@ -226,8 +210,15 @@ unsigned char FloppyDriveController::Read(unsigned char nPort)
 	switch(nPort) {
 		case 0: // 3F0: FDCDMADackIO
 		case 1: // 3F1: FDCDMATcIO
-			if(pDiskImage) {
-				nData = *pFdcDataPtr++;
+			if(pDiskFile) {
+				unsigned char tmp = 0;
+				::fseek(pDiskFile, nFdcDataOffset, SEEK_SET);
+				if(::fread(&tmp, 1, 1, pDiskFile) == 1) {
+					nData = tmp;
+				} else {
+					nData = 0;
+				}
+				nFdcDataOffset++;
 				bFdcDataBytes--;
 				if(0 == bFdcDataBytes)
 					bFdcPhase = FDC_PH_RESULT;
@@ -260,13 +251,24 @@ unsigned char FloppyDriveController::Read(unsigned char nPort)
 				switch(bFdcLastCommand) {
 					case 0x02: // ReadTrack
 					case 0x06: // ReadData
-						nData = *pFdcDataPtr++;
+					{
+						unsigned char tmp = 0;
+						if(pDiskFile) {
+							::fseek(pDiskFile, nFdcDataOffset, SEEK_SET);
+							if(::fread(&tmp, 1, 1, pDiskFile) != 1) tmp = 0;
+							nFdcDataOffset++;
+						} else {
+							bDiskChanged = 1;
+							tmp = 0;
+						}
+						nData = tmp;
 
 						bFdcDataBytes--;
 						if(0 == bFdcDataBytes) {
 							bFdcPhase = FDC_PH_RESULT;
 						}
-						break;
+					}
+					break;
 					default:
 						// who call me?
 						break;
@@ -281,6 +283,7 @@ unsigned char FloppyDriveController::Read(unsigned char nPort)
 					nFdcMainStatus &= ~FDC_MS_DATA_IN; // host to fdc
 
 					bFdcIrq = 0;
+
 				}
 			} else {
 				nData = 0;
@@ -309,14 +312,21 @@ void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 	switch(nPort) {
 		case 0: // 3F0: FDCDMADackIO
 		case 1: // 3F1: FDCDMATcIO
-			*pFdcDataPtr++ = nData;
-			bDirty = 1;
-			bFdcDataBytes--;
-			if(0 == bFdcDataBytes) {
-				bFdcCycle = 0;
-				bFdcPhase = FDC_PH_RESULT;
-				nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
-			}
+				if(pDiskFile) {
+					unsigned char tmp = (unsigned char)nData;
+					::fseek(pDiskFile, nFdcDataOffset, SEEK_SET);
+					::fwrite(&tmp, 1, 1, pDiskFile);
+					bDirty = 1;
+					nFdcDataOffset++;
+				} else {
+					bDiskChanged = 1;
+				}
+				bFdcDataBytes--;
+				if(0 == bFdcDataBytes) {
+					bFdcCycle = 0;
+					bFdcPhase = FDC_PH_RESULT;
+					nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
+				}
 			break;
 		case 2: // 3F2: FDCDRQPortI/FDCCtrlPortO
 			// O: D5 : Drv B motor
@@ -338,7 +348,7 @@ void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 					// IRQ after soft reset
 					if(0 == nFdcDrvSel) {
 						// Driver A Only
-						bFdcIrq = pDiskImage ? 1 : 0;
+						bFdcIrq = pDiskFile ? 1 : 0;
 					} else {
 						bFdcIrq = 0;
 					}
@@ -376,7 +386,14 @@ void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 					switch(bFdcLastCommand) {
 						case 0x05: // WriteData
 							bDirty = 1;
-							*pFdcDataPtr++ = nData;
+							if(pDiskFile) {
+								unsigned char tmp = (unsigned char)nData;
+								::fseek(pDiskFile, nFdcDataOffset, SEEK_SET);
+								::fwrite(&tmp, 1, 1, pDiskFile);
+								nFdcDataOffset++;
+							} else {
+								bDiskChanged = 1;
+							}
 							bFdcDataBytes--;
 							if(0 == bFdcDataBytes) {
 								bFdcCycle = 0;
@@ -521,7 +538,7 @@ void FloppyDriveController::FdcWriteData(FloppyDriveController* thiz)
 
 	thiz->nCurrentLBA = LBA;
 
-	thiz->pFdcDataPtr = thiz->pDiskImage + LBA * 512;
+	thiz->nFdcDataOffset = LBA * 512;
 
 	thiz->bFdcDataBytes = 512;
 
@@ -569,7 +586,7 @@ void FloppyDriveController::FdcReadData(FloppyDriveController* thiz)
 
 	thiz->nCurrentLBA = LBA;
 
-	thiz->pFdcDataPtr = thiz->pDiskImage + LBA * 512;
+	thiz->nFdcDataOffset = LBA * 512;
 
 	thiz->bFdcDataBytes = 512;
 
@@ -649,7 +666,7 @@ void FloppyDriveController::FdcWriteDeletedData(FloppyDriveController* thiz)
 
 void FloppyDriveController::FdcReadID(FloppyDriveController* thiz)
 {
-	if(!thiz->pDiskImage) {
+	if(!thiz->pDiskFile) {
 		// no response while disk empty
 		thiz->bFdcPhase = FDC_PH_IDLE;
 		return;
@@ -658,7 +675,7 @@ void FloppyDriveController::FdcReadID(FloppyDriveController* thiz)
 	thiz->nFDCStatus[0] = 0;
 
 	thiz->bFdcResults[0] = 0;
-	thiz->bFdcResults[1] = thiz->pDiskImage ? 0 : (FDC_S1_ND | FDC_S1_MA); // ST1
+	thiz->bFdcResults[1] = thiz->pDiskFile ? 0 : (FDC_S1_ND | FDC_S1_MA); // ST1
 	thiz->bFdcResults[2] = 0; // ST2
 	thiz->bFdcResults[3] = 0;
 	thiz->bFdcResults[4] = 0;
@@ -684,9 +701,16 @@ void FloppyDriveController::FdcFormatTrack(FloppyDriveController* thiz)
 	unsigned char GPL = thiz->bFdcCommands[4]; // GPL: gap 3 length
 	unsigned char D = thiz->bFdcCommands[5]; // D: filler pattern to write in each byte
 
-	thiz->pFdcDataPtr = thiz->pDiskImage + thiz->nCurrentLBA * 512;
-
-	memset(thiz->pFdcDataPtr, D, 512);
+	// 直接将填充字节写入磁盘镜像文件（扇区 512 字节）
+	if(thiz->pDiskFile) {
+		unsigned char buf[512];
+		memset(buf, D, 512);
+		::fseek(thiz->pDiskFile, thiz->nCurrentLBA * 512, SEEK_SET);
+		::fwrite(buf, 512, 1, thiz->pDiskFile);
+		thiz->bDirty = 1;
+	} else {
+		// 没有磁盘，忽略
+	}
 
 	thiz->nFDCStatus[0] = 0;
 
