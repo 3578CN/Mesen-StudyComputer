@@ -93,11 +93,10 @@ FloppyDriveController::FloppyDriveController()
 
 	nFdcCylinder = 0;
 
-    nFdcDataOffset = 0;
+	nFdcDataOffset = 0;
 
-    bDirty = 0;
-    nDiskSize = 0;
-    pDiskFile = nullptr;
+	nDiskSize = 0;
+	pDiskFile = nullptr;
 
 	nCurrentLBA = 0;
 
@@ -142,8 +141,6 @@ int FloppyDriveController::LoadDiskImage(const char* filePath)
 	// close previous file if any
 	if(pDiskFile) fclose(pDiskFile);
 	pDiskFile = fp;
-
-	bDirty = 0;
 #if defined(_MSC_VER)
 	strcpy_s(szDiskName, sizeof(szDiskName), filePath);
 #else
@@ -170,11 +167,6 @@ int FloppyDriveController::Eject()
 		return 0;
 	}
 
-	// 如果有修改，尝试保存（flush）
-	if(bDirty) {
-		SaveDiskImage();
-	}
-
 	// 关闭文件句柄
 	fclose(pDiskFile);
 	pDiskFile = nullptr;
@@ -182,7 +174,6 @@ int FloppyDriveController::Eject()
 	szDiskName[0] = '\0';
 
 	// 重置状态
-	bDirty = 0;
 	nCurrentLBA = 0;
 	nFdcDataOffset = 0;
 	bFdcDataBytes = 0;
@@ -211,7 +202,6 @@ int FloppyDriveController::SaveDiskImage()
 		return 0;
 	}
 
-	bDirty = 0;
 	return 1;
 }
 
@@ -324,23 +314,22 @@ void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 	switch(nPort) {
 		case 0: // 3F0: FDCDMADackIO
 		case 1: // 3F1: FDCDMATcIO
-				if(pDiskFile) {
-					unsigned char tmp = (unsigned char)nData;
-					::fseek(pDiskFile, nFdcDataOffset, SEEK_SET);
-					::fwrite(&tmp, 1, 1, pDiskFile);
-					bDirty = 1;
-					nFdcDataOffset++;
-				} else {
-					bDiskChanged = 1;
-				}
-					bFdcDataBytes--;
-					if(0 == bFdcDataBytes) {
-						// 扇区写入完成，刷新 stdio 缓冲以便其它进程能看到变化
-						if(pDiskFile) ::fflush(pDiskFile);
-						bFdcCycle = 0;
-						bFdcPhase = FDC_PH_RESULT;
-						nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
-					}
+			if(pDiskFile) {
+				unsigned char tmp = (unsigned char)nData;
+				::fseek(pDiskFile, nFdcDataOffset, SEEK_SET);
+				::fwrite(&tmp, 1, 1, pDiskFile);
+				nFdcDataOffset++;
+			} else {
+				bDiskChanged = 1;
+			}
+			bFdcDataBytes--;
+			if(0 == bFdcDataBytes) {
+				// 扇区写入完成，刷新 stdio 缓冲以便其它进程能看到变化
+				if(pDiskFile) ::fflush(pDiskFile);
+				bFdcCycle = 0;
+				bFdcPhase = FDC_PH_RESULT;
+				nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
+			}
 			break;
 		case 2: // 3F2: FDCDRQPortI/FDCCtrlPortO
 			// O: D5 : Drv B motor
@@ -399,7 +388,6 @@ void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 					// Non-DMA mode
 					switch(bFdcLastCommand) {
 						case 0x05: // WriteData
-							bDirty = 1;
 							if(pDiskFile) {
 								unsigned char tmp = (unsigned char)nData;
 								::fseek(pDiskFile, nFdcDataOffset, SEEK_SET);
@@ -415,7 +403,7 @@ void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 								bFdcCycle = 0;
 								bFdcPhase = FDC_PH_RESULT;
 								nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
-							
+
 								bFdcIrq = 0;
 							}
 							break;
@@ -723,7 +711,6 @@ void FloppyDriveController::FdcFormatTrack(FloppyDriveController* thiz)
 		memset(buf, D, 512);
 		::fseek(thiz->pDiskFile, thiz->nCurrentLBA * 512, SEEK_SET);
 		::fwrite(buf, 512, 1, thiz->pDiskFile);
-		thiz->bDirty = 1;
 		// 格式化写入后立即刷新以便其它程序能看到变化
 		::fflush(thiz->pDiskFile);
 	} else {

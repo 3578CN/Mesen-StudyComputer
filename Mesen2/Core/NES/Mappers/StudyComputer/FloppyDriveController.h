@@ -13,7 +13,6 @@ public:
 	// 保存磁盘
 	int SaveDiskImage();
 
-	int IsDirty() { return bDirty; }
 	int IsPresent() { return (pDiskFile != nullptr); }
 
 	// IO: nPort: 0-7
@@ -144,11 +143,10 @@ protected:
 	unsigned char  nFdcCylinder;
 	int               nFdcDataOffset;
 
-	FILE*          pDiskFile;
+	FILE* pDiskFile;
 
 	int			   nCurrentLBA;
 
-	int            bDirty;
 	// 使用文件句柄 pDiskFile 代替内存镜像缓冲区
 
 	// 磁盘变更标志：插入或弹出时设置，读取端口 0x3F7 时报告并清除
