@@ -331,7 +331,6 @@ void MapperBbk::WriteRegister(uint16_t addr, uint8_t value)
 		if(fdc) {
 			bDiskAccess = true;
 			fdc->Write(nPort, value);
-			fdc->SaveDiskImage();
 		}
 
 		return;
