@@ -21,6 +21,8 @@ namespace Mesen.Views
 		private IDisposable? _hoverSub;
 		// 订阅核心通知以更新软驱指示灯
 		private NotificationListener? _floppyNotificationListener;
+		// 软驱灯延时关闭定时器（在收到停止通知后延迟 100ms 关闭）
+		private DispatcherTimer? _floppyOffTimer;
 
 		public MainMenuView()
 		{
@@ -61,6 +63,11 @@ namespace Mesen.Views
 					_floppyNotificationListener.Dispose();
 					_floppyNotificationListener = null;
 				}
+				// 停止并释放任何延时关闭定时器
+				if(_floppyOffTimer != null) {
+					_floppyOffTimer.Stop();
+					_floppyOffTimer = null;
+				}
 			};
 
 			floppyPanel.PointerReleased += async (s, e) => {
@@ -94,14 +101,32 @@ namespace Mesen.Views
 					_floppyNotificationListener = new NotificationListener();
 					_floppyNotificationListener.OnNotification += (NotificationEventArgs e) => {
 						if(e.NotificationType == ConsoleNotificationType.FloppyIoStarted) {
+							// 读/写开始：取消任何待关闭定时器并立即点亮
 							Dispatcher.UIThread.Post(() => {
+								if(_floppyOffTimer != null) {
+									_floppyOffTimer.Stop();
+									_floppyOffTimer = null;
+								}
 								floppyLed.Background = activeBrush;
 								floppyLed.BorderBrush = activeBorderBrush;
 							});
 						} else if(e.NotificationType == ConsoleNotificationType.FloppyIoStopped) {
+							// 读/写结束：启动一次性 100ms 定时器延迟关闭（若期间再次开始则会取消）
 							Dispatcher.UIThread.Post(() => {
-								floppyLed.Background = idleBrush;
-								floppyLed.BorderBrush = idleBorderBrush;
+								if(_floppyOffTimer != null) {
+									_floppyOffTimer.Stop();
+									_floppyOffTimer = null;
+								}
+								_floppyOffTimer = new DispatcherTimer();
+								_floppyOffTimer.Interval = TimeSpan.FromMilliseconds(100);
+								_floppyOffTimer.Tick += (s2, t2) => {
+									// 关闭并释放定时器
+									_floppyOffTimer.Stop();
+									_floppyOffTimer = null;
+									floppyLed.Background = idleBrush;
+									floppyLed.BorderBrush = idleBorderBrush;
+								};
+								_floppyOffTimer.Start();
 							});
 						}
 					};
