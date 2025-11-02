@@ -11,6 +11,8 @@
 #include "pch.h"
 #include "NES/BaseMapper.h"
 #include "NES/Mappers/StudyComputer/Bbk_Fd1.h"
+// A12 事件监视器，用于检测 PPU VRAM 地址的 A12 上升沿
+#include "NES/Mappers/A12Watcher.h"
 
 class MapperBbk final : public BaseMapper
 {
@@ -38,8 +40,11 @@ protected:
 	// 使能 VRAM 地址钩子，以便接收 PPU 地址变化（A12 事件）
 	bool EnableVramAddressHook() override { return true; }
 
-	// 每扫描线回调（由 PPU 调用），用于更新 nCurScanLine
-	void HSync(int nScanline) override;
+	// 接收 PPU VRAM 地址变化通知（用于 A12 上升沿检测）
+	void NotifyVramAddressChange(uint16_t addr) override;
+
+	// A12 监视器：用于基于 VRAM 地址的 A12 上升沿检测（替代基于 HSync 的计数）
+	A12Watcher _a12Watcher;
 
 	// Holtek/Inno IRQ 检查：根据 nLineCount / bSplitMode / bEnableIRQ 等状态决定是否向 CPU 触发或清除外部 IRQ。
 	// 返回：如果已触发 IRQ 则返回 true，否则返回 false。

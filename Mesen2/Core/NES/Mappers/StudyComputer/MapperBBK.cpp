@@ -15,6 +15,7 @@
 #include "NES/Mappers/StudyComputer/FloppyDriveController.h"
 #include "NES/Mappers/StudyComputer/Bbk_Fd1.h"
 #include "Shared/BaseControlManager.h"
+#include "NES/Mappers/A12Watcher.h"
 
 // 将 EVRAM（PPU Nametable）整合到 BaseMapper 提供的 _mapperRam 的高位段中。
 // EDRAM 原始大小为 512KB，EVRAM 为 32KB。EVRAM 放在 _mapperRam 的偏移位置：
@@ -637,35 +638,17 @@ bool MapperBbk::CheckIRQ()
 	return false;
 }
 
-void MapperBbk::HSync(int nScanline)
+// 描述：基于 PPU A12 上升沿处理 BBK 的行计数与分帧映射切换，替换原来的 HSync 实现。
+// 在 PPU VRAM 地址变化时由 BaseMapper 调用（需 EnableVramAddressHook 返回 true）。
+void MapperBbk::NotifyVramAddressChange(uint16_t addr)
 {
-	//DebugPrint("nScanline=%d\n", nScanline);
-	if(0 == nScanline && bSplitMode) {
-		uint8_t page;
-
-		nQIndex = 0;
-		nLineCount = QueueSR[nQIndex];
-
-		page = QueueVR[nQIndex] & 15; 	// 2K
-		SetPpuMemoryMapping(0x0000, 0x03FF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
-		SetPpuMemoryMapping(0x0400, 0x07FF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
-
-		page = (QueueVR[nQIndex] >> 4) & 15;
-		SetPpuMemoryMapping(0x0800, 0x0BFF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
-		SetPpuMemoryMapping(0x0C00, 0x0FFF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
-
-		nQIndex++;
-	}
-
-	if(nScanline >= 240)
-		return;
-
-	CheckIRQ();
-
-	if(255 == nLineCount) {
-		if(nQIndex != nNrOfSR) {
+	uint32_t frameCycle = _console->GetPpu()->GetFrameCycle();
+	if(_a12Watcher.UpdateVramAddress(addr, _console->GetPpu()->GetFrameCycle()) == A12StateChange::Rise) {
+		int curScanline = int(frameCycle / 341) - 1;
+		if(0 == curScanline && bSplitMode) {
 			uint8_t page;
 
+			nQIndex = 0;
 			nLineCount = QueueSR[nQIndex];
 
 			page = QueueVR[nQIndex] & 15; 	// 2K
@@ -678,7 +661,30 @@ void MapperBbk::HSync(int nScanline)
 
 			nQIndex++;
 		}
-	} else if(bSplitMode || bEnableIRQ) {
-		nLineCount++;
+
+		if(curScanline >= 240)
+			return;
+
+		CheckIRQ();
+
+		if(255 == nLineCount) {
+			if(nQIndex != nNrOfSR) {
+				uint8_t page;
+
+				nLineCount = QueueSR[nQIndex];
+
+				page = QueueVR[nQIndex] & 15; 	// 2K
+				SetPpuMemoryMapping(0x0000, 0x03FF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+				SetPpuMemoryMapping(0x0400, 0x07FF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
+
+				page = (QueueVR[nQIndex] >> 4) & 15;
+				SetPpuMemoryMapping(0x0800, 0x0BFF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+				SetPpuMemoryMapping(0x0C00, 0x0FFF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
+
+				nQIndex++;
+			}
+		} else if(bSplitMode || bEnableIRQ) {
+			nLineCount++;
+		}
 	}
 }
