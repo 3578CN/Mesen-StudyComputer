@@ -27,6 +27,8 @@ static constexpr uint32_t BBK_EVRAM_BASE = BBK_EDRAM_SIZE; // EVRAM 在 _mapperR
 
 void MapperBbk::InitMapper()
 {
+	// 如果控制台区域为 Auto，将此卡带标记为 Dendy，让控制台在 Auto 时自动选择 Dendy（不修改用户全局设置）
+	_romInfo.System = GameSystem::Dendy;
 	// 初始化并注册 BBK 专用的输入设备（键盘/鼠标 FD1）
 	if(!_bbkInput) {
 		_bbkInput = std::make_shared<BbkFd1>(_console->GetEmulator());
