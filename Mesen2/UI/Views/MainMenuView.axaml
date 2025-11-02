@@ -1,17 +1,11 @@
-﻿<UserControl
-	xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:vm="using:Mesen.ViewModels"
 	xmlns:c="using:Mesen.Controls"
 	xmlns:cfg="using:Mesen.Config"
-	xmlns:l="using:Mesen.Localization"
-	mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="650"
-	VerticalAlignment="Top"
-	x:DataType="vm:MainMenuViewModel"
-	x:Class="Mesen.Views.MainMenuView"
->
+	xmlns:l="using:Mesen.Localization" mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="650" VerticalAlignment="Top" x:DataType="vm:MainMenuViewModel" x:Class="Mesen.Views.MainMenuView">
 	<Design.DataContext>
 		<vm:MainMenuViewModel />
 	</Design.DataContext>
@@ -28,12 +22,6 @@
 
 		<!-- 菜单右侧显示加载的软盘镜像文件 -->
 		<Border Name="FloppyPanel" DockPanel.Dock="Left" Background="Transparent" Margin="1,0,1,0" Padding="0">
-			<Border.Styles>
-				<!-- Apply hover background only to the named inner content area so the separator line is not covered -->
-				<Style Selector="Border:pointerover > #FloppyContent" x:SetterTargetType="Border">
-					<Setter Property="Background" Value="#B0A0C8FF"/>
-				</Style>
-			</Border.Styles>
 
 			<Border.ContextMenu>
 				<ContextMenu>
@@ -47,10 +35,9 @@
 				<!-- 右侧内容区：悬停背景只作用到这里（FloppyContent） -->
 				<Border Name="FloppyContent" VerticalAlignment="Center" Background="Transparent" Margin="3,0,0,0" Padding="2,4">
 					<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Background="Transparent">
-						<!-- 软驱灯占位（固定图案），仅用于 UI 展示，逻辑暂不实现 -->
-							<!-- 使用 Border 模拟软驱灯长方形（带细边框与圆角），默认灰色，UI 将根据核心活动更新颜色 -->
-							<!-- 初始 BorderBrush 也设置为灰色，避免在 UI 初始化前出现绿色边框 -->
-							<Border Name="FloppyLed" Width="12" Height="8" VerticalAlignment="Center" Margin="6,0,6,0" Background="#FF8A8A8A" BorderBrush="#FF5E5E5E" BorderThickness="1" CornerRadius="2" />
+						<!-- 使用 Border 模拟软驱灯长方形（带细边框与圆角），默认灰色，UI 将根据核心活动更新颜色 -->
+						<!-- 初始 BorderBrush 也设置为灰色，避免在 UI 初始化前出现绿色边框 -->
+						<Border Name="FloppyLed" Width="14" Height="10" VerticalAlignment="Center" Margin="6,0,6,0" Background="#FF8A8A8A" BorderBrush="#FFC0C0C0" BorderThickness="1" CornerRadius="3" />
 						<TextBlock Name="FloppyStatusText" FontWeight="Bold" Text="{Binding FloppyStatus}" Margin="0,0,6,0" />
 					</StackPanel>
 				</Border>
