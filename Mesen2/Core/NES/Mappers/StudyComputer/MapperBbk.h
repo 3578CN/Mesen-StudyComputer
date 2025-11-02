@@ -21,8 +21,9 @@ protected:
 	uint16_t GetPrgPageSize() override { return 0x8000; }
 	uint16_t GetChrPageSize() override { return 0x2000; }
 
-	// 使用 BaseMapper 提供的 mapper RAM（EDRAM），由 BaseMapper 在初始化时分配并注册
-	uint32_t GetMapperRamSize() override { return 512 * 1024; }
+	// 使用 BaseMapper 提供的 mapper RAM（包含 EDRAM + EVRAM），由 BaseMapper 在初始化时分配并注册
+	// 这里返回大小：EDRAM 512KB + EVRAM 32KB
+	uint32_t GetMapperRamSize() override { return (512 + 32) * 1024; }
 
 	void InitMapper() override;
 
@@ -43,8 +44,6 @@ protected:
 	// Holtek/Inno IRQ 检查：根据 nLineCount / bSplitMode / bEnableIRQ 等状态决定是否向 CPU 触发或清除外部 IRQ。
 	// 返回：如果已触发 IRQ 则返回 true，否则返回 false。
 	bool CheckIRQ();
-
-	uint8_t EVRAM[32 * 1024];
 
 	// ---- BBK 内部寄存器/状态 ----
 	// 描述：控制 ROM/DRAM 映射与 IO 行为的寄存器和标志。

@@ -16,6 +16,14 @@
 #include "NES/Mappers/StudyComputer/Bbk_Fd1.h"
 #include "Shared/BaseControlManager.h"
 
+// 将 EVRAM（PPU Nametable）整合到 BaseMapper 提供的 _mapperRam 的高位段中。
+// EDRAM 原始大小为 512KB，EVRAM 为 32KB。EVRAM 放在 _mapperRam 的偏移位置：
+// EVRAM_BASE = 512KB
+// 这样 PPU/CPU 指针比较会识别这些内存为 NesMapperRam，便于调试器查看。
+static constexpr uint32_t BBK_EDRAM_SIZE = 512 * 1024; // EDRAM 大小
+static constexpr uint32_t BBK_EVRAM_SIZE = 32 * 1024;  // EVRAM 大小
+static constexpr uint32_t BBK_EVRAM_BASE = BBK_EDRAM_SIZE; // EVRAM 在 _mapperRam 中的起始偏移
+
 void MapperBbk::InitMapper()
 {
 	// 初始化并注册 BBK 专用的输入设备（键盘/鼠标 FD1）
@@ -135,30 +143,31 @@ void MapperBbk::InitMapper()
 void MapperBbk::Reset(bool softReset)
 {
 	if(!softReset) {
-	// 使用 BaseMapper 分配并注册的 mapper RAM
-	memset(_mapperRam, 0, _mapperRamSize);
-	memset(EVRAM, 0, sizeof(EVRAM));
+		// 使用 BaseMapper 分配并注册的 mapper RAM（包含 EDRAM + EVRAM）
+		memset(_mapperRam, 0, _mapperRamSize);
+		// 清零 EVRAM 段（位于 _mapperRam 的高位）
+		memset(_mapperRam + BBK_EVRAM_BASE, 0, BBK_EVRAM_SIZE);
 
 		// ---- CPU 映射（PRG / EDRAM / BIOS） ----
-	// 4xxx - 5xxx  -> mapper RAM + 0x78000  (8KB)
-	SetCpuMemoryMapping(0x4000, 0x5FFF, _mapperRam + 0x78000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
-	// 6xxx - 7xxx  -> mapper RAM + 0x7A000  (8KB)
-	SetCpuMemoryMapping(0x6000, 0x7FFF, _mapperRam + 0x7A000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
-	// 8xxx - 9xxx  -> mapper RAM + 0x0000  (8KB)
-	SetCpuMemoryMapping(0x8000, 0x9FFF, _mapperRam + 0x0000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
-	// Axxx - Bxxx  -> mapper RAM + 0x2000  (8KB)
-	SetCpuMemoryMapping(0xA000, 0xBFFF, _mapperRam + 0x2000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
+		// 4xxx - 5xxx  -> mapper RAM + 0x78000  (8KB)
+		SetCpuMemoryMapping(0x4000, 0x5FFF, _mapperRam + 0x78000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
+		// 6xxx - 7xxx  -> mapper RAM + 0x7A000  (8KB)
+		SetCpuMemoryMapping(0x6000, 0x7FFF, _mapperRam + 0x7A000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
+		// 8xxx - 9xxx  -> mapper RAM + 0x0000  (8KB)
+		SetCpuMemoryMapping(0x8000, 0x9FFF, _mapperRam + 0x0000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
+		// Axxx - Bxxx  -> mapper RAM + 0x2000  (8KB)
+		SetCpuMemoryMapping(0xA000, 0xBFFF, _mapperRam + 0x2000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
 
 		// 将 CPU 地址 0xC000-0xDFFF 映射到 PRG ROM 的偏移 0x1C000 处（8KB，作为 ROM 读取）
 		SetCpuMemoryMapping(0xC000, 0xDFFF, _prgRom + 0x1C000, 0, _prgSize, MemoryAccessType::Read);
 		// 将 CPU 地址 0xE000-0xFFFF 映射到 PRG ROM 的偏移 0x1E000 处（8KB，作为 ROM 读取）
 		SetCpuMemoryMapping(0xE000, 0xFFFF, _prgRom + 0x1E000, 0, _prgSize, MemoryAccessType::Read);
 
-		// Nametables (existing)
-		SetPpuMemoryMapping(0x2000, 0x23FF, EVRAM, 0x0000, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-		SetPpuMemoryMapping(0x2400, 0x27FF, EVRAM, 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-		SetPpuMemoryMapping(0x2800, 0x2BFF, EVRAM, 0x0800, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-		SetPpuMemoryMapping(0x2C00, 0x2FFF, EVRAM, 0x0C00, sizeof(EVRAM), MemoryAccessType::ReadWrite);
+		// Nametables（使用整合到 _mapperRam 的 EVRAM 段）
+		SetPpuMemoryMapping(0x2000, 0x23FF, _mapperRam, BBK_EVRAM_BASE + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+		SetPpuMemoryMapping(0x2400, 0x27FF, _mapperRam, BBK_EVRAM_BASE + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
+		SetPpuMemoryMapping(0x2800, 0x2BFF, _mapperRam, BBK_EVRAM_BASE + 0x0800, _mapperRamSize, MemoryAccessType::ReadWrite);
+		SetPpuMemoryMapping(0x2C00, 0x2FFF, _mapperRam, BBK_EVRAM_BASE + 0x0C00, _mapperRamSize, MemoryAccessType::ReadWrite);
 
 		// 初始化 Mapper 内部寄存器/状态（参考 VirtuaNES 的 MapperBBK::Reset）
 		// 保证上电/硬复位时各寄存器与队列处于已知状态
@@ -471,12 +480,13 @@ void MapperBbk::WriteRegister(uint16_t addr, uint8_t value)
 				nLineCount = QueueSR[nQIndex];
 
 				page = QueueVR[nQIndex] & 15;
-				SetPpuMemoryMapping(0x0000, 0x03FF, EVRAM, page * 0x0800 + 0x0000, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-				SetPpuMemoryMapping(0x0400, 0x07FF, EVRAM, page * 0x0800 + 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite);
+				// PPU 0x0000-0x0FFF 区域映射到 _mapperRam 的 EVRAM 段
+				SetPpuMemoryMapping(0x0000, 0x03FF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+				SetPpuMemoryMapping(0x0400, 0x07FF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
 
 				page = (QueueVR[nQIndex] >> 4) & 15;
-				SetPpuMemoryMapping(0x0800, 0x0BFF, EVRAM, page * 0x0800 + 0x0000, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-				SetPpuMemoryMapping(0x0C00, 0x0FFF, EVRAM, page * 0x0800 + 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite);
+				SetPpuMemoryMapping(0x0800, 0x0BFF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+				SetPpuMemoryMapping(0x0C00, 0x0FFF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
 
 				nQIndex++;
 			}
@@ -485,37 +495,37 @@ void MapperBbk::WriteRegister(uint16_t addr, uint8_t value)
 
 		case 0xFF03: // VideoDataPort0
 			value &= 0x0F;
-			SetPpuMemoryMapping(0x0000, 0x03FF, EVRAM, value * 0x0800 + 0x0000, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-			SetPpuMemoryMapping(0x0400, 0x07FF, EVRAM, value * 0x0800 + 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite);
+			SetPpuMemoryMapping(0x0000, 0x03FF, _mapperRam, BBK_EVRAM_BASE + value * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+			SetPpuMemoryMapping(0x0400, 0x07FF, _mapperRam, BBK_EVRAM_BASE + value * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
 			break;
 
 		case 0xFF0B: // VideoDataPort1
 			value &= 0x0F;
-			SetPpuMemoryMapping(0x0800, 0x0BFF, EVRAM, value * 0x0800 + 0x0000, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-			SetPpuMemoryMapping(0x0C00, 0x0FFF, EVRAM, value * 0x0800 + 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite);
+			SetPpuMemoryMapping(0x0800, 0x0BFF, _mapperRam, BBK_EVRAM_BASE + value * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+			SetPpuMemoryMapping(0x0C00, 0x0FFF, _mapperRam, BBK_EVRAM_BASE + value * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
 			break;
 
 		case 0xFF13: // VideoDataPort2 (2K)
 			value &= 0x0F; // 只取低 4 位作为 2K 页面索引
-			SetPpuMemoryMapping(0x1000, 0x13FF, EVRAM, value * 0x0800 + 0x0000, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-			SetPpuMemoryMapping(0x1400, 0x17FF, EVRAM, value * 0x0800 + 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite);
+			SetPpuMemoryMapping(0x1000, 0x13FF, _mapperRam, BBK_EVRAM_BASE + value * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+			SetPpuMemoryMapping(0x1400, 0x17FF, _mapperRam, BBK_EVRAM_BASE + value * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
 			break;
 
 		case 0xFF1B: // VideoDataPort3 (2K)
 			value &= 0x0F; // 只取低 4 位作为 2K 页面索引
-			SetPpuMemoryMapping(0x1800, 0x1BFF, EVRAM, value * 0x0800 + 0x0000, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-			SetPpuMemoryMapping(0x1C00, 0x1FFF, EVRAM, value * 0x0800 + 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite);
+			SetPpuMemoryMapping(0x1800, 0x1BFF, _mapperRam, BBK_EVRAM_BASE + value * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+			SetPpuMemoryMapping(0x1C00, 0x1FFF, _mapperRam, BBK_EVRAM_BASE + value * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
 			break;
 
 			// FF23/2B/33/... 映射 1K 页面
-		case 0xFF23: value &= 0x1F; SetPpuMemoryMapping(0x0000, 0x03FF, EVRAM, value * 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite); break;
-		case 0xFF2B: value &= 0x1F; SetPpuMemoryMapping(0x0400, 0x07FF, EVRAM, value * 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite); break;
-		case 0xFF33: value &= 0x1F; SetPpuMemoryMapping(0x0800, 0x0BFF, EVRAM, value * 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite); break;
-		case 0xFF3B: value &= 0x1F; SetPpuMemoryMapping(0x0C00, 0x0FFF, EVRAM, value * 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite); break;
-		case 0xFF43: value &= 0x1F; SetPpuMemoryMapping(0x1000, 0x13FF, EVRAM, value * 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite); break;
-		case 0xFF4B: value &= 0x1F; SetPpuMemoryMapping(0x1400, 0x17FF, EVRAM, value * 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite); break;
-		case 0xFF53: value &= 0x1F; SetPpuMemoryMapping(0x1800, 0x1BFF, EVRAM, value * 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite); break;
-		case 0xFF5B: value &= 0x1F; SetPpuMemoryMapping(0x1C00, 0x1FFF, EVRAM, value * 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite); break;
+		case 0xFF23: value &= 0x1F; SetPpuMemoryMapping(0x0000, 0x03FF, _mapperRam, BBK_EVRAM_BASE + value * 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite); break;
+		case 0xFF2B: value &= 0x1F; SetPpuMemoryMapping(0x0400, 0x07FF, _mapperRam, BBK_EVRAM_BASE + value * 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite); break;
+		case 0xFF33: value &= 0x1F; SetPpuMemoryMapping(0x0800, 0x0BFF, _mapperRam, BBK_EVRAM_BASE + value * 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite); break;
+		case 0xFF3B: value &= 0x1F; SetPpuMemoryMapping(0x0C00, 0x0FFF, _mapperRam, BBK_EVRAM_BASE + value * 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite); break;
+		case 0xFF43: value &= 0x1F; SetPpuMemoryMapping(0x1000, 0x13FF, _mapperRam, BBK_EVRAM_BASE + value * 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite); break;
+		case 0xFF4B: value &= 0x1F; SetPpuMemoryMapping(0x1400, 0x17FF, _mapperRam, BBK_EVRAM_BASE + value * 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite); break;
+		case 0xFF53: value &= 0x1F; SetPpuMemoryMapping(0x1800, 0x1BFF, _mapperRam, BBK_EVRAM_BASE + value * 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite); break;
+		case 0xFF5B: value &= 0x1F; SetPpuMemoryMapping(0x1C00, 0x1FFF, _mapperRam, BBK_EVRAM_BASE + value * 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite); break;
 
 		case 0xFF10: // SoundPort0/SpeakInitPort
 			if(0 == nRegSPInt && (value & 1)) {
@@ -636,13 +646,13 @@ void MapperBbk::HSync(int nScanline)
 		nQIndex = 0;
 		nLineCount = QueueSR[nQIndex];
 
-		page = QueueVR[nQIndex] & 15;	// 2K
-		SetPpuMemoryMapping(0x0000, 0x03FF, EVRAM, page * 0x0800 + 0x0000, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-		SetPpuMemoryMapping(0x0400, 0x07FF, EVRAM, page * 0x0800 + 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite);
+		page = QueueVR[nQIndex] & 15; 	// 2K
+		SetPpuMemoryMapping(0x0000, 0x03FF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+		SetPpuMemoryMapping(0x0400, 0x07FF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
 
 		page = (QueueVR[nQIndex] >> 4) & 15;
-		SetPpuMemoryMapping(0x0800, 0x0BFF, EVRAM, page * 0x0800 + 0x0000, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-		SetPpuMemoryMapping(0x0C00, 0x0FFF, EVRAM, page * 0x0800 + 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite);
+		SetPpuMemoryMapping(0x0800, 0x0BFF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+		SetPpuMemoryMapping(0x0C00, 0x0FFF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
 
 		nQIndex++;
 	}
@@ -658,13 +668,13 @@ void MapperBbk::HSync(int nScanline)
 
 			nLineCount = QueueSR[nQIndex];
 
-			page = QueueVR[nQIndex] & 15;	// 2K
-			SetPpuMemoryMapping(0x0000, 0x03FF, EVRAM, page * 0x0800 + 0x0000, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-			SetPpuMemoryMapping(0x0400, 0x07FF, EVRAM, page * 0x0800 + 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite);
+			page = QueueVR[nQIndex] & 15; 	// 2K
+			SetPpuMemoryMapping(0x0000, 0x03FF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+			SetPpuMemoryMapping(0x0400, 0x07FF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
 
 			page = (QueueVR[nQIndex] >> 4) & 15;
-			SetPpuMemoryMapping(0x0800, 0x0BFF, EVRAM, page * 0x0800 + 0x0000, sizeof(EVRAM), MemoryAccessType::ReadWrite);
-			SetPpuMemoryMapping(0x0C00, 0x0FFF, EVRAM, page * 0x0800 + 0x0400, sizeof(EVRAM), MemoryAccessType::ReadWrite);
+			SetPpuMemoryMapping(0x0800, 0x0BFF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0000, _mapperRamSize, MemoryAccessType::ReadWrite);
+			SetPpuMemoryMapping(0x0C00, 0x0FFF, _mapperRam, BBK_EVRAM_BASE + page * 0x0800 + 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite);
 
 			nQIndex++;
 		}
