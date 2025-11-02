@@ -1370,6 +1370,11 @@ template<class T> void NesPpu<T>::Exec()
 
 template<class T> void NesPpu<T>::ProcessScanlineFirstCycle()
 {
+	// Notify mapper of scanline change
+	if(_mapper) {
+		_mapper->HSync(_scanline);
+	}
+
 	_cycle = 0;
 	if(++_scanline > _vblankEnd) {
 		_lastUpdatedPixel = -1;
@@ -1388,11 +1393,6 @@ template<class T> void NesPpu<T>::ProcessScanlineFirstCycle()
 	}
 
 	UpdateApuStatus();
-
-	// Notify mapper of scanline change
-	if(_mapper) {
-		_mapper->HSync(_scanline);
-	}
 
 	if(_scanline == _console->GetNesConfig().InputScanline) {
 		_console->GetControlManager()->UpdateControlDevices();
