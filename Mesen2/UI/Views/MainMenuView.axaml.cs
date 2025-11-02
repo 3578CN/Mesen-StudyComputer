@@ -81,9 +81,10 @@ namespace Mesen.Views
 			try {
 				var floppyLed = this.GetControl<Border>("FloppyLed");
 				var activeBrush = new SolidColorBrush(Color.Parse("#FF0DD18A"));
-				var idleBrush = new SolidColorBrush(Color.Parse("#FF8A8A8A"));
+				// 空闲颜色调浅一点，保持轻微灰度以便与背景区分
+				var idleBrush = new SolidColorBrush(Color.Parse("#FFDDDDDD"));
 				var activeBorderBrush = new SolidColorBrush(Color.Parse("#FF0A845F"));
-				var idleBorderBrush = new SolidColorBrush(Color.Parse("#FF5E5E5E"));
+				var idleBorderBrush = new SolidColorBrush(Color.Parse("#FFBEBEBE"));
 				// 初始化为空闲颜色（包括边框）
 				floppyLed.Background = idleBrush;
 				floppyLed.BorderBrush = idleBorderBrush;
