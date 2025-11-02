@@ -135,18 +135,19 @@ void MapperBbk::InitMapper()
 void MapperBbk::Reset(bool softReset)
 {
 	if(!softReset) {
-		memset(EDRAM, 0, sizeof(EDRAM));
-		memset(EVRAM, 0, sizeof(EVRAM));
+	// 使用 BaseMapper 分配并注册的 mapper RAM
+	memset(_mapperRam, 0, _mapperRamSize);
+	memset(EVRAM, 0, sizeof(EVRAM));
 
 		// ---- CPU 映射（PRG / EDRAM / BIOS） ----
-		// 4xxx - 5xxx  -> EDRAM + 0x78000  (8KB)
-		SetCpuMemoryMapping(0x4000, 0x5FFF, EDRAM + 0x78000, 0, sizeof(EDRAM), MemoryAccessType::ReadWrite);
-		// 6xxx - 7xxx  -> EDRAM + 0x7A000  (8KB)
-		SetCpuMemoryMapping(0x6000, 0x7FFF, EDRAM + 0x7A000, 0, sizeof(EDRAM), MemoryAccessType::ReadWrite);
-		// 8xxx - 9xxx  -> EDRAM + 0x0000  (8KB)
-		SetCpuMemoryMapping(0x8000, 0x9FFF, EDRAM + 0x0000, 0, sizeof(EDRAM), MemoryAccessType::ReadWrite);
-		// Axxx - Bxxx  -> EDRAM + 0x2000  (8KB)
-		SetCpuMemoryMapping(0xA000, 0xBFFF, EDRAM + 0x2000, 0, sizeof(EDRAM), MemoryAccessType::ReadWrite);
+	// 4xxx - 5xxx  -> mapper RAM + 0x78000  (8KB)
+	SetCpuMemoryMapping(0x4000, 0x5FFF, _mapperRam + 0x78000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
+	// 6xxx - 7xxx  -> mapper RAM + 0x7A000  (8KB)
+	SetCpuMemoryMapping(0x6000, 0x7FFF, _mapperRam + 0x7A000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
+	// 8xxx - 9xxx  -> mapper RAM + 0x0000  (8KB)
+	SetCpuMemoryMapping(0x8000, 0x9FFF, _mapperRam + 0x0000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
+	// Axxx - Bxxx  -> mapper RAM + 0x2000  (8KB)
+	SetCpuMemoryMapping(0xA000, 0xBFFF, _mapperRam + 0x2000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
 
 		// 将 CPU 地址 0xC000-0xDFFF 映射到 PRG ROM 的偏移 0x1C000 处（8KB，作为 ROM 读取）
 		SetCpuMemoryMapping(0xC000, 0xDFFF, _prgRom + 0x1C000, 0, _prgSize, MemoryAccessType::Read);
@@ -277,16 +278,16 @@ void MapperBbk::WriteLow(uint16_t addr, uint8_t value)
 		if((addr & 2) == 0 && bMapRam && !bFF01_D4) {
 			int offset = addr & 0x1FFF;
 			// 6xxx-7xxx 映射到 EDRAM + 0x7A000
-			EDRAM[0x7A000 + offset] = value;
+			_mapperRam[0x7A000 + offset] = value;
 		}
 	} else if(addr >= 0x4400) {
 		int bank = addr >> 13;      // 2 -> 0x4000-0x5FFF, 3 -> 0x6000-0x7FFF
 		int offset = addr & 0x1FFF; // 8K 偏移
 
 		if(bank == 2) {
-			EDRAM[0x78000 + offset] = value;
+			_mapperRam[0x78000 + offset] = value;
 		} else if(bank == 3) {
-			EDRAM[0x7A000 + offset] = value;
+			_mapperRam[0x7A000 + offset] = value;
 		}
 	}
 }
@@ -303,9 +304,9 @@ uint8_t MapperBbk::ReadLow(uint16_t addr)
 	// 4xxx-5xxx (bank 2) 映射到 EDRAM + 0x78000
 	// 6xxx-7xxx (bank 3) 映射到 EDRAM + 0x7A000
 	if(bank == 2)
-		return EDRAM[0x78000 + offset];
+		return _mapperRam[0x78000 + offset];
 	else // bank == 3
-		return EDRAM[0x7A000 + offset];
+		return _mapperRam[0x7A000 + offset];
 }
 
 void MapperBbk::WriteRegister(uint16_t addr, uint8_t value)
@@ -319,7 +320,7 @@ void MapperBbk::WriteRegister(uint16_t addr, uint8_t value)
 		if(phy == 0x7FFFE && value == 0x9B)
 			value = 0x96;
 
-		EDRAM[phy] = value;
+		_mapperRam[phy] = value;
 		return;
 	}
 
@@ -364,9 +365,9 @@ void MapperBbk::WriteRegister(uint16_t addr, uint8_t value)
 
 			// C000-FFFF 到 EDRAM/ROM 的映射
 			if(value & 8) {
-				// map C000-FFFF 到 EDRAM
-				SetCpuMemoryMapping(0xC000, 0xDFFF, EDRAM + nRegFF24 * 0x2000, 0, sizeof(EDRAM), MemoryAccessType::ReadWrite);
-				SetCpuMemoryMapping(0xE000, 0xFFFF, EDRAM + nRegFF2C * 0x2000, 0, sizeof(EDRAM), MemoryAccessType::ReadWrite);
+				// map C000-FFFF 到 mapper RAM
+				SetCpuMemoryMapping(0xC000, 0xDFFF, _mapperRam + nRegFF24 * 0x2000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
+				SetCpuMemoryMapping(0xE000, 0xFFFF, _mapperRam + nRegFF2C * 0x2000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
 				bMapRam = true;
 			} else {
 				// map C000-FFFF 到 ROM
@@ -398,9 +399,9 @@ void MapperBbk::WriteRegister(uint16_t addr, uint8_t value)
 				SetCpuMemoryMapping(0xA000, 0xBFFF, _prgRom + value * 0x4000 + 0x2000, 0, _prgSize, MemoryAccessType::Read);
 			} else {
 				// DRAM
-				value &= 0x1F;	//  512K
-				SetCpuMemoryMapping(0x8000, 0x9FFF, EDRAM + value * 0x4000 + 0x0000, 0, sizeof(EDRAM), MemoryAccessType::ReadWrite);
-				SetCpuMemoryMapping(0xA000, 0xBFFF, EDRAM + value * 0x4000 + 0x2000, 0, sizeof(EDRAM), MemoryAccessType::ReadWrite);
+				value &= 0x1F; // 512K
+				SetCpuMemoryMapping(0x8000, 0x9FFF, _mapperRam + value * 0x4000 + 0x0000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
+				SetCpuMemoryMapping(0xA000, 0xBFFF, _mapperRam + value * 0x4000 + 0x2000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
 			}
 			break;
 
@@ -408,25 +409,25 @@ void MapperBbk::WriteRegister(uint16_t addr, uint8_t value)
 			value &= 0x3F;
 			nRegFF14 = value | 0x40;
 			bRomSel_89AB = 0;
-			SetCpuMemoryMapping(0x8000, 0x9FFF, EDRAM + value * 0x2000, 0, sizeof(EDRAM), MemoryAccessType::ReadWrite);
+			SetCpuMemoryMapping(0x8000, 0x9FFF, _mapperRam + value * 0x2000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
 			break;
 
 		case 0xFF1C:
 			nRegFF1C = value & 0x3F;
 			bRomSel_89AB = 0;
-			SetCpuMemoryMapping(0xA000, 0xBFFF, EDRAM + nRegFF1C * 0x2000, 0, sizeof(EDRAM), MemoryAccessType::ReadWrite);
+			SetCpuMemoryMapping(0xA000, 0xBFFF, _mapperRam + nRegFF1C * 0x2000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
 			break;
 
 		case 0xFF24:
 			nRegFF24 = value & 0x3F;
 			if(bMapRam)
-				SetCpuMemoryMapping(0xC000, 0xDFFF, EDRAM + nRegFF24 * 0x2000, 0, sizeof(EDRAM), MemoryAccessType::ReadWrite);
+				SetCpuMemoryMapping(0xC000, 0xDFFF, _mapperRam + nRegFF24 * 0x2000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
 			break;
 
 		case 0xFF2C:
 			nRegFF2C = value & 0x3F;
 			if(bMapRam)
-				SetCpuMemoryMapping(0xE000, 0xFFFF, EDRAM + nRegFF2C * 0x2000, 0, sizeof(EDRAM), MemoryAccessType::ReadWrite);
+				SetCpuMemoryMapping(0xE000, 0xFFFF, _mapperRam + nRegFF2C * 0x2000, 0, _mapperRamSize, MemoryAccessType::ReadWrite);
 			break;
 
 		case 0xFF12: // Init
@@ -558,7 +559,7 @@ uint8_t MapperBbk::ReadRegister(uint16_t addr)
 	if(INNO_CS_ROM == cs_type) {
 		return _prgRom[phy_addr];
 	} else if(INNO_CS_DRAM == cs_type) {
-		return EDRAM[phy_addr];
+		return _mapperRam[phy_addr];
 	}
 
 	// FDC 读取区间 0xFF80 - 0xFFB8

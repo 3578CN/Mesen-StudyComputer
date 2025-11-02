@@ -21,6 +21,9 @@ protected:
 	uint16_t GetPrgPageSize() override { return 0x8000; }
 	uint16_t GetChrPageSize() override { return 0x2000; }
 
+	// 使用 BaseMapper 提供的 mapper RAM（EDRAM），由 BaseMapper 在初始化时分配并注册
+	uint32_t GetMapperRamSize() override { return 512 * 1024; }
+
 	void InitMapper() override;
 
 	bool AllowLowReadWrite() override { return true; }
@@ -42,7 +45,6 @@ protected:
 	bool CheckIRQ();
 
 	uint8_t EVRAM[32 * 1024];
-	uint8_t EDRAM[512 * 1024];
 
 	// ---- BBK 内部寄存器/状态 ----
 	// 描述：控制 ROM/DRAM 映射与 IO 行为的寄存器和标志。
