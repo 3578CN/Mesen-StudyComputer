@@ -80,10 +80,11 @@ namespace Mesen.Views
 			// 软驱活动灯：通过通知驱动（核心发送 FloppyIoStarted/FloppyIoStopped）
 			try {
 				var floppyLed = this.GetControl<Border>("FloppyLed");
-				var activeBrush = new SolidColorBrush(Color.Parse("#FF0DD18A"));
+				// 活动颜色：调深一点的绿色，便于在浅色背景上更醒目
+				var activeBrush = new SolidColorBrush(Color.Parse("#FF0B8B50"));
 				// 空闲颜色调浅一点，保持轻微灰度以便与背景区分
 				var idleBrush = new SolidColorBrush(Color.Parse("#FFDDDDDD"));
-				var activeBorderBrush = new SolidColorBrush(Color.Parse("#FF0A845F"));
+				var activeBorderBrush = new SolidColorBrush(Color.Parse("#FF07583F"));
 				var idleBorderBrush = new SolidColorBrush(Color.Parse("#FFBEBEBE"));
 				// 初始化为空闲颜色（包括边框）
 				floppyLed.Background = idleBrush;
