@@ -306,7 +306,8 @@ extern "C" {
 	{
 		// 仅在尚未实例化时创建 FDC 实例，实例化后保持到程序退出或主动更新
 		if(!_fdc) {
-			_fdc.reset(new FloppyDriveController());
+			// 将 Emulator 指针传递给 FDC 以便发送通知
+			_fdc.reset(new FloppyDriveController(_emu.get()));
 		}
 		if(_fdc) return _fdc->LoadDiskImage(filename);
 		return 0;
@@ -318,6 +319,15 @@ extern "C" {
 			return _fdc->Eject();
 		}
 		return 0;
+	}
+
+	// 查询软驱是否正在进行读/写（由 UI 轮询调用）
+	DllExport int __stdcall Floppy_IsActive()
+	{
+	    if(_fdc) {
+	        return _fdc->IsActive();
+	    }
+	    return 0;
 	}
 
 	class PgoKeyManager : public IKeyManager

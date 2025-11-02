@@ -87,6 +87,10 @@ namespace Mesen.Interop
 		CheatsChanged,
 		RequestConfigChange,
 		RefreshSoftwareRenderer
+		,
+		// 软驱 I/O 开始/结束通知
+		FloppyIoStarted,
+		FloppyIoStopped
 	}
 
 	public struct GameLoadedEventParams

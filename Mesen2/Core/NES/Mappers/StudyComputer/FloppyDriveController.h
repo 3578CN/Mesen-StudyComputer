@@ -1,9 +1,16 @@
 ﻿#include <stdio.h>
 
+// 预声明 Emulator，用于发送通知
+class Emulator;
+
 class FloppyDriveController
 {
 public:
-	FloppyDriveController();
+	/**
+	 * 构造函数
+	 * @param emu 指向宿主 Emulator，用于发送通知
+	 */
+	FloppyDriveController(Emulator* emu);
 	~FloppyDriveController();
 
 	// 加载磁盘
@@ -14,6 +21,8 @@ public:
 	int SaveDiskImage();
 
 	int IsPresent() { return (pDiskFile != nullptr); }
+	// 返回当前软驱是否处于读/写活动中（1: 活动中, 0: 空闲）
+	int IsActive();
 
 	// IO: nPort: 0-7
 	unsigned char Read(unsigned char nPort);
@@ -156,4 +165,12 @@ protected:
 	char           szDiskName[2048];
 
 private:
+	// 指向宿主 Emulator，用于发送通知（可为空）
+	Emulator* _emu;
+
+	// 上一次记录的活动状态（0: 空闲, 1: 活动中），用于避免重复发送通知
+	int bFdcActiveState;
+
+	// 当 I/O 活动状态变化时调用，负责发送 FloppyIoStarted/FloppyIoStopped 通知
+	void UpdateActiveState();
 };

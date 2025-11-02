@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using Mesen.Utilities;
 using Mesen.ViewModels;
 using System.Collections;
@@ -18,6 +19,8 @@ namespace Mesen.Views
 	{
 		public Menu MainMenu { get; }
 		private IDisposable? _hoverSub;
+		// 订阅核心通知以更新软驱指示灯
+		private NotificationListener? _floppyNotificationListener;
 
 		public MainMenuView()
 		{
@@ -53,6 +56,11 @@ namespace Mesen.Views
 			this.DetachedFromVisualTree += (s, e) => {
 				_hoverSub?.Dispose();
 				_hoverSub = null;
+				// 取消订阅通知监听器
+				if(_floppyNotificationListener != null) {
+					_floppyNotificationListener.Dispose();
+					_floppyNotificationListener = null;
+				}
 			};
 
 			floppyPanel.PointerReleased += async (s, e) => {
@@ -68,6 +76,51 @@ namespace Mesen.Views
 					}
 				}
 			};
+
+			// 软驱活动灯：通过通知驱动（核心发送 FloppyIoStarted/FloppyIoStopped）
+			try {
+				var floppyLed = this.GetControl<Border>("FloppyLed");
+				var activeBrush = new SolidColorBrush(Color.Parse("#FF0DD18A"));
+				var idleBrush = new SolidColorBrush(Color.Parse("#FF8A8A8A"));
+				var activeBorderBrush = new SolidColorBrush(Color.Parse("#FF0A845F"));
+				var idleBorderBrush = new SolidColorBrush(Color.Parse("#FF5E5E5E"));
+				// 初始化为空闲颜色（包括边框）
+				floppyLed.Background = idleBrush;
+				floppyLed.BorderBrush = idleBorderBrush;
+
+				if(!Design.IsDesignMode) {
+					_floppyNotificationListener = new NotificationListener();
+					_floppyNotificationListener.OnNotification += (NotificationEventArgs e) => {
+						if(e.NotificationType == ConsoleNotificationType.FloppyIoStarted) {
+							Dispatcher.UIThread.Post(() => {
+								floppyLed.Background = activeBrush;
+								floppyLed.BorderBrush = activeBorderBrush;
+							});
+						} else if(e.NotificationType == ConsoleNotificationType.FloppyIoStopped) {
+							Dispatcher.UIThread.Post(() => {
+								floppyLed.Background = idleBrush;
+								floppyLed.BorderBrush = idleBorderBrush;
+							});
+						}
+					};
+				}
+
+				// 一次性同步当前状态（若可用），避免短暂不同步
+				try {
+					bool isActive = EmuApi.FloppyIsActive() != 0;
+					if(isActive) {
+						floppyLed.Background = activeBrush;
+						floppyLed.BorderBrush = activeBorderBrush;
+					} else {
+						floppyLed.Background = idleBrush;
+						floppyLed.BorderBrush = idleBorderBrush;
+					}
+				} catch {
+					// 在设计模式或 DLL 未加载时忽略
+				}
+			} catch {
+				// 在设计模式或控件不可用时忽略
+			}
 		}
 
 		private void InitializeComponent()

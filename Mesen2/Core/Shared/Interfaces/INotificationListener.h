@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "pch.h"
 
 enum class EmulatorShortcut;
@@ -29,6 +29,9 @@ enum class ConsoleNotificationType
 	CheatsChanged,
 	RequestConfigChange,
 	RefreshSoftwareRenderer,
+	// 软驱 I/O 开始/结束通知
+	FloppyIoStarted,
+	FloppyIoStopped,
 };
 
 struct GameLoadedEventParams

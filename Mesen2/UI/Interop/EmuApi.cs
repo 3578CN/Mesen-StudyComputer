@@ -143,6 +143,11 @@ namespace Mesen.Interop
 		/// </summary>
 		/// <returns>返回 1 表示成功，0 表示失败。</returns>
 		[DllImport(DllPath, EntryPoint = "Floppy_Eject")] public static extern int FloppyEject();
+		/// <summary>
+		/// 查询软驱是否处于读/写活动中（由 UI 轮询调用）。
+		/// </summary>
+		/// <returns>返回 1 表示活动中，0 表示空闲。</returns>
+		[DllImport(DllPath, EntryPoint = "Floppy_IsActive")] public static extern int FloppyIsActive();
 	}
 
 	public struct TimingInfo
