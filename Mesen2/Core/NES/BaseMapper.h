@@ -114,9 +114,6 @@ public:
 	// 必须由子类实现的初始化函数
 	virtual void InitMapper() = 0;
 
-	// 公共接口：PPU 会在每次扫描线变化时调用此方法
-	virtual void HSync(int scanline) {}
-
 protected:
 	// 可接受 RomData 的初始化函数（可重写）
 	virtual void InitMapper(RomData& romData);

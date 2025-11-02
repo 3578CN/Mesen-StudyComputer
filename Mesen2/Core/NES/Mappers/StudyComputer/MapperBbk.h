@@ -43,7 +43,7 @@ protected:
 	// 接收 PPU VRAM 地址变化通知（用于 A12 上升沿检测）
 	void NotifyVramAddressChange(uint16_t addr) override;
 
-	// A12 监视器：用于基于 VRAM 地址的 A12 上升沿检测（替代基于 HSync 的计数）
+	// A12 监视器：用于基于 VRAM 地址的 A12 上升沿检测
 	A12Watcher _a12Watcher;
 
 	// Holtek/Inno IRQ 检查：根据 nLineCount / bSplitMode / bEnableIRQ 等状态决定是否向 CPU 触发或清除外部 IRQ。

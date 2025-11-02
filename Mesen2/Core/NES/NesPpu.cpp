@@ -51,7 +51,7 @@ template<class T> NesPpu<T>::NesPpu(NesConsole* console)
 		}
 	} else {
 		//When not using random ram, use a static state at power on (matches blargg's old palette test rom)
-		constexpr uint8_t paletteRamBootValues[0x20]{
+		constexpr uint8_t paletteRamBootValues[0x20] {
 			0x09, 0x01, 0x00, 0x01, 0x00, 0x02, 0x02, 0x0D, 0x08, 0x10, 0x08, 0x24, 0x00, 0x00, 0x04, 0x2C,
 			0x09, 0x01, 0x34, 0x03, 0x00, 0x04, 0x00, 0x14, 0x08, 0x3A, 0x00, 0x02, 0x00, 0x20, 0x2C, 0x08
 		};
@@ -1370,11 +1370,6 @@ template<class T> void NesPpu<T>::Exec()
 
 template<class T> void NesPpu<T>::ProcessScanlineFirstCycle()
 {
-	// Notify mapper of scanline change
-	if(_mapper) {
-		_mapper->HSync(_scanline);
-	}
-
 	_cycle = 0;
 	if(++_scanline > _vblankEnd) {
 		_lastUpdatedPixel = -1;

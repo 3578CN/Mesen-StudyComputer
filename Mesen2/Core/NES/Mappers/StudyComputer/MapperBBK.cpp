@@ -638,7 +638,7 @@ bool MapperBbk::CheckIRQ()
 	return false;
 }
 
-// 描述：基于 PPU A12 上升沿处理 BBK 的行计数与分帧映射切换，替换原来的 HSync 实现。
+// 描述：基于 PPU A12 上升沿处理 BBK 的行计数与分帧映射切换。
 // 在 PPU VRAM 地址变化时由 BaseMapper 调用（需 EnableVramAddressHook 返回 true）。
 void MapperBbk::NotifyVramAddressChange(uint16_t addr)
 {
