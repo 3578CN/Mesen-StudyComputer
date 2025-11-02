@@ -92,7 +92,8 @@ namespace Mesen.Views
 				// 空闲颜色调浅一点，保持轻微灰度以便与背景区分
 				var idleBrush = new SolidColorBrush(Color.Parse("#FFDDDDDD"));
 				var activeBorderBrush = new SolidColorBrush(Color.Parse("#FF07583F"));
-				var idleBorderBrush = new SolidColorBrush(Color.Parse("#FFBEBEBE"));
+				// 空闲时边框颜色调深一些，使指示灯在同色系背景下更有对比度
+				var idleBorderBrush = new SolidColorBrush(Color.Parse("#FF8A8A8A"));
 				// 初始化为空闲颜色（包括边框）
 				floppyLed.Background = idleBrush;
 				floppyLed.BorderBrush = idleBorderBrush;
