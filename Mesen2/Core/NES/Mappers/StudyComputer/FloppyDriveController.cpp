@@ -128,6 +128,9 @@ FloppyDriveController::~FloppyDriveController()
 
 int FloppyDriveController::LoadDiskImage(const char* filePath)
 {
+	// 更新活动状态（可能从无盘->有盘）
+	UpdateActiveState();
+
 	FILE* fp;
 
 	// try to open disk image for read/write (do not truncate)
@@ -172,9 +175,6 @@ int FloppyDriveController::LoadDiskImage(const char* filePath)
 	bFdcDataBytes = 0;
 	bFdcPhase = FDC_PH_IDLE;
 
-	// 更新活动状态（可能从无盘->有盘）
-	UpdateActiveState();
-
 	return 1;
 }
 
@@ -182,6 +182,9 @@ int FloppyDriveController::LoadDiskImage(const char* filePath)
 // 返回 0 表示无磁盘，1 表示成功。
 int FloppyDriveController::Eject()
 {
+	// 弹出时保证通知为停止状态
+	UpdateActiveState();
+
 	// 没有加载磁盘
 	if(!pDiskFile) {
 		// 没有可弹出的磁盘
@@ -211,9 +214,6 @@ int FloppyDriveController::Eject()
 	// 标记磁盘已改变（弹出）
 	bDiskChanged = 1;
 
-	// 弹出时保证通知为停止状态
-	UpdateActiveState();
-
 	return 1;
 }
 
@@ -231,6 +231,8 @@ int FloppyDriveController::SaveDiskImage()
 
 unsigned char FloppyDriveController::Read(unsigned char nPort)
 {
+	UpdateActiveState();
+
 	unsigned char nData;
 
 	switch(nPort) {
@@ -248,8 +250,6 @@ unsigned char FloppyDriveController::Read(unsigned char nPort)
 				bFdcDataBytes--;
 				if(0 == bFdcDataBytes)
 					bFdcPhase = FDC_PH_RESULT;
-				// 传输字节计数变化，更新活动状态
-				UpdateActiveState();
 			} else {
 				bDiskChanged = 1;
 				nData = 0;
@@ -295,8 +295,6 @@ unsigned char FloppyDriveController::Read(unsigned char nPort)
 						if(0 == bFdcDataBytes) {
 							bFdcPhase = FDC_PH_RESULT;
 						}
-						// 传输字节计数变化，更新活动状态
-						UpdateActiveState();
 					}
 					break;
 					default:
@@ -339,6 +337,8 @@ unsigned char FloppyDriveController::Read(unsigned char nPort)
 
 void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 {
+	UpdateActiveState();
+
 	switch(nPort) {
 		case 0: // 3F0: FDCDMADackIO
 		case 1: // 3F1: FDCDMATcIO
@@ -358,8 +358,6 @@ void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 				bFdcPhase = FDC_PH_RESULT;
 				nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
 			}
-			// 传输字节计数变化，更新活动状态
-			UpdateActiveState();
 			break;
 		case 2: // 3F2: FDCDRQPortI/FDCCtrlPortO
 			// O: D5 : Drv B motor
@@ -436,8 +434,6 @@ void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 
 								bFdcIrq = 0;
 							}
-							// 传输字节计数变化，更新活动状态
-							UpdateActiveState();
 							break;
 						case 0x0D: // FormatTrack
 							bFdcDataBytes--;
@@ -448,8 +444,6 @@ void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 
 								bFdcIrq = 0;
 							}
-							// 传输字节计数变化，更新活动状态
-							UpdateActiveState();
 							break;
 						default:
 							// ERROR
@@ -494,6 +488,8 @@ void FloppyDriveController::Write(unsigned char nPort, unsigned nData)
 
 void FloppyDriveController::FdcHardReset(void)
 {
+	UpdateActiveState();
+
 	bFdcDmaInt = 0;
 	nFdcDrvSel = 0;
 	nFdcMotor = 0;
@@ -511,6 +507,8 @@ void FloppyDriveController::FdcHardReset(void)
 
 void FloppyDriveController::FdcSoftReset(void)
 {
+	UpdateActiveState();
+
 	nFdcDrvSel = 0;
 	nFdcMotor = 0;
 	nFdcMainStatus = FDC_MS_RQM;
@@ -526,27 +524,29 @@ void FloppyDriveController::FdcSoftReset(void)
 
 void FloppyDriveController::FdcNop(FloppyDriveController* thiz)
 {
+	// 更新活动状态（可能进入/离开 Result）
+	thiz->UpdateActiveState();
+
 	thiz->nFDCStatus[0] = FDC_S0_IC1;
 	thiz->bFdcResults[0] = thiz->nFDCStatus[0];
 	thiz->bFdcPhase = FDC_PH_RESULT;
 	thiz->nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
-	// 更新活动状态（可能进入/离开 Result）
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcReadTrack(FloppyDriveController* thiz)
 {
-	thiz = thiz;
+	thiz->UpdateActiveState();
 
 	thiz->bFdcPhase = (thiz->nFdcMainStatus & FDC_MS_EXECUTION) ?
 		FDC_PH_EXECUTION : FDC_PH_RESULT;
 
 	thiz->nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcSpecify(FloppyDriveController* thiz)
 {
+	thiz->UpdateActiveState();
+
 	// 03, DF, 03
 	// [1] Step Rate Time, Head Unload Time
 	// [2] HLT/ND
@@ -558,20 +558,21 @@ void FloppyDriveController::FdcSpecify(FloppyDriveController* thiz)
 		thiz->nFdcMainStatus &= ~FDC_MS_EXECUTION;
 
 	thiz->bFdcPhase = FDC_PH_IDLE;
-
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcSenseDriveStatus(FloppyDriveController* thiz)
 {
+	thiz->UpdateActiveState();
+
 	thiz->bFdcPhase = FDC_PH_RESULT;
 	thiz->nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
-
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcWriteData(FloppyDriveController* thiz)
 {
+	// 进入读/写执行阶段，更新活动状态
+	thiz->UpdateActiveState();
+
 	unsigned char C = thiz->bFdcCommands[2];
 	unsigned char H = thiz->bFdcCommands[3];
 	unsigned char R = thiz->bFdcCommands[4];
@@ -582,9 +583,7 @@ void FloppyDriveController::FdcWriteData(FloppyDriveController* thiz)
 	LBA = C * 36 + H * 18 + (R - 1);
 
 	thiz->nCurrentLBA = LBA;
-
 	thiz->nFdcDataOffset = LBA * 512;
-
 	thiz->bFdcDataBytes = 512;
 
 	R++;
@@ -615,13 +614,13 @@ void FloppyDriveController::FdcWriteData(FloppyDriveController* thiz)
 
 	thiz->bFdcPhase = (thiz->nFdcMainStatus & FDC_MS_EXECUTION) ?
 		FDC_PH_EXECUTION : FDC_PH_RESULT;
-
-	// 进入读/写执行阶段，更新活动状态
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcReadData(FloppyDriveController* thiz)
 {
+	// 进入读/写执行阶段，更新活动状态
+	thiz->UpdateActiveState();
+
 	unsigned char C = thiz->bFdcCommands[2];
 	unsigned char H = thiz->bFdcCommands[3];
 	unsigned char R = thiz->bFdcCommands[4];
@@ -633,9 +632,7 @@ void FloppyDriveController::FdcReadData(FloppyDriveController* thiz)
 	if(LBA > 2879) LBA = 2879;
 
 	thiz->nCurrentLBA = LBA;
-
 	thiz->nFdcDataOffset = LBA * 512;
-
 	thiz->bFdcDataBytes = 512;
 
 	R++;
@@ -665,13 +662,12 @@ void FloppyDriveController::FdcReadData(FloppyDriveController* thiz)
 		FDC_PH_EXECUTION : FDC_PH_RESULT;
 
 	thiz->nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
-
-	// 进入读/写执行阶段，更新活动状态
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcRecalibrate(FloppyDriveController* thiz)
 {
+	thiz->UpdateActiveState();
+
 	unsigned char US;
 
 	US = thiz->bFdcCommands[1] & 3;
@@ -680,12 +676,12 @@ void FloppyDriveController::FdcRecalibrate(FloppyDriveController* thiz)
 
 	thiz->bFdcIrq = 1;
 	thiz->bFdcPhase = FDC_PH_IDLE;
-
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcSenseIntStatus(FloppyDriveController* thiz)
 {
+	thiz->UpdateActiveState();
+
 	switch(thiz->bFdcLastCommand) {
 		case 0x07: // FdcRecalibrate
 			thiz->bFdcResults[0] = thiz->nFDCStatus[0];
@@ -709,20 +705,20 @@ void FloppyDriveController::FdcSenseIntStatus(FloppyDriveController* thiz)
 	thiz->bFdcIrq = 0;
 	thiz->bFdcPhase = FDC_PH_RESULT;
 	thiz->nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
-
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcWriteDeletedData(FloppyDriveController* thiz)
 {
+	thiz->UpdateActiveState();
+
 	thiz->bFdcPhase = (thiz->nFdcMainStatus & FDC_MS_EXECUTION) ?
 		FDC_PH_EXECUTION : FDC_PH_RESULT;
-
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcReadID(FloppyDriveController* thiz)
 {
+	thiz->UpdateActiveState();
+
 	if(!thiz->pDiskFile) {
 		// no response while disk empty
 		thiz->bFdcPhase = FDC_PH_IDLE;
@@ -742,20 +738,20 @@ void FloppyDriveController::FdcReadID(FloppyDriveController* thiz)
 	thiz->bFdcIrq = 1;
 	thiz->bFdcPhase = FDC_PH_RESULT;
 	thiz->nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
-
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcReadDeletedData(FloppyDriveController* thiz)
 {
+	thiz->UpdateActiveState();
+
 	thiz->bFdcPhase = (thiz->nFdcMainStatus & FDC_MS_EXECUTION) ?
 		FDC_PH_EXECUTION : FDC_PH_RESULT;
-
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcFormatTrack(FloppyDriveController* thiz)
 {
+	thiz->UpdateActiveState();
+
 	unsigned char HD_US = thiz->bFdcCommands[1];
 	unsigned char N = thiz->bFdcCommands[2]; // N: bytes per sector
 	unsigned char SC = thiz->bFdcCommands[3]; // SC: sectors per track
@@ -788,12 +784,12 @@ void FloppyDriveController::FdcFormatTrack(FloppyDriveController* thiz)
 
 	thiz->bFdcPhase = FDC_PH_RESULT;
 	thiz->nFdcMainStatus |= FDC_MS_DATA_IN; // fdc to host
-
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcSeek(FloppyDriveController* thiz)
 {
+	thiz->UpdateActiveState();
+
 	// new cylinder number
 	unsigned char NCN;
 	unsigned char US;
@@ -811,38 +807,36 @@ void FloppyDriveController::FdcSeek(FloppyDriveController* thiz)
 
 	thiz->bFdcIrq = 1;
 	thiz->bFdcPhase = FDC_PH_IDLE;
-
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcScanEqual(FloppyDriveController* thiz)
 {
+	thiz->UpdateActiveState();
+
 	thiz->bFdcPhase = (thiz->nFdcMainStatus & FDC_MS_EXECUTION) ?
 		FDC_PH_EXECUTION : FDC_PH_RESULT;
-
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcScanLowOrEqual(FloppyDriveController* thiz)
 {
+	thiz->UpdateActiveState();
+
 	thiz->bFdcPhase = (thiz->nFdcMainStatus & FDC_MS_EXECUTION) ?
 		FDC_PH_EXECUTION : FDC_PH_RESULT;
-
-	thiz->UpdateActiveState();
 }
 
 void FloppyDriveController::FdcScanHighOrEqual(FloppyDriveController* thiz)
 {
+	thiz->UpdateActiveState();
+
 	thiz->bFdcPhase = (thiz->nFdcMainStatus & FDC_MS_EXECUTION) ?
 		FDC_PH_EXECUTION : FDC_PH_RESULT;
-
-	thiz->UpdateActiveState();
 }
 
 // 更新并发送软驱 I/O 活动状态通知（仅在状态变化时发送，避免重复）
 void FloppyDriveController::UpdateActiveState()
 {
-	int active = (pDiskFile && (bFdcPhase == FDC_PH_EXECUTION || bFdcDataBytes > 0)) ? 1 : 0;
+	int active = (pDiskFile && (bFdcPhase != FDC_PH_IDLE || bFdcDataBytes > 0)) ? 1 : 0;
 	if(active != bFdcActiveState) {
 		bFdcActiveState = active;
 		if(_emu) {
@@ -854,8 +848,8 @@ void FloppyDriveController::UpdateActiveState()
 // 返回是否正在进行 I/O（读或写）操作。此函数用于外部查询软驱活动状态。
 int FloppyDriveController::IsActive()
 {
-	// pDiskFile 不为空且处于执行阶段或有待传输数据则视为活动中
-	if(pDiskFile && (bFdcPhase == FDC_PH_EXECUTION || bFdcDataBytes > 0)) {
+	// pDiskFile 不为空且处于非空闲阶段或有待传输数据则视为活动中
+	if(pDiskFile && (bFdcPhase != FDC_PH_IDLE || bFdcDataBytes > 0)) {
 		return 1;
 	}
 	return 0;
