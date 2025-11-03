@@ -15,13 +15,15 @@ namespace Mesen.ViewModels
 	/// </summary>
 	public class DiskDirectoryNode
 	{
-		public DiskDirectoryNode(string name, bool isDirectory, bool isDisk, long size, IReadOnlyList<DiskDirectoryNode> children)
+		public DiskDirectoryNode(string name, bool isDirectory, bool isDisk, long size, IReadOnlyList<DiskDirectoryNode> children, long capacity = 0, long freeBytes = 0)
 		{
 			Name = name;
 			IsDirectory = isDirectory;
 			IsDisk = isDisk;
 			Size = size;
 			Children = children;
+			Capacity = capacity;
+			FreeBytes = freeBytes;
 		}
 
 		/// <summary>
@@ -72,6 +74,16 @@ namespace Mesen.ViewModels
 				return $"{Size} 字节";
 			}
 		}
+
+		/// <summary>
+		/// 磁盘总容量（字节），仅在 IsDisk 时有意义。
+		/// </summary>
+		public long Capacity { get; }
+
+		/// <summary>
+		/// 磁盘可用空间（字节），仅在 IsDisk 时有意义。
+		/// </summary>
+		public long FreeBytes { get; }
 
 		/// <summary>
 		/// 当节点为文件时，可在 UI 上绑定的选择命令。
@@ -212,7 +224,17 @@ namespace Mesen.ViewModels
 				}
 			}
 
-			var node = new DiskDirectoryNode(name, isDirectory, isDisk, size, children);
+
+			long capacity = 0;
+			long freeBytes = 0;
+			if(element.TryGetProperty("capacity", out JsonElement capProp) && capProp.TryGetInt64(out long capVal)) {
+				capacity = capVal;
+			}
+			if(element.TryGetProperty("free", out JsonElement freeProp) && freeProp.TryGetInt64(out long freeVal)) {
+				freeBytes = freeVal;
+			}
+
+			var node = new DiskDirectoryNode(name, isDirectory, isDisk, size, children, capacity, freeBytes);
 			// 设置深度（根的子项为 0）
 			node.Depth = Math.Max(0, depth);
 			// 如果 JSON 中包含 modified 字段则解析（native 层可扩展以提供该字段）
@@ -233,7 +255,26 @@ namespace Mesen.ViewModels
 				return "磁盘为空";
 			}
 
-			return $"目录 {directoryCount} 个，文件 {fileCount} 个";
+			string baseStatus = $"目录 {directoryCount} 个，文件 {fileCount} 个";
+
+			// 如果是磁盘根节点且提供了容量/可用空间信息，则附加显示
+			if(root.IsDisk && root.Capacity > 0) {
+				string capText = FormatBytes(root.Capacity);
+				string freeText = root.FreeBytes > 0 ? FormatBytes(root.FreeBytes) : "未知";
+				return baseStatus + $"，总大小 {capText}，可用 {freeText}";
+			}
+
+			return baseStatus;
+		}
+
+		private static string FormatBytes(long bytes)
+		{
+			double v = bytes;
+			string[] units = new[] { "B", "KB", "MB", "GB", "TB" };
+			int unit = 0;
+			while(v >= 1024 && unit < units.Length - 1) { v /= 1024.0; unit++; }
+			if(unit == 0) return $"{(long)v} {units[unit]}";
+			return $"{v:0.##} {units[unit]}";
 		}
 
 		private static void CountEntries(DiskDirectoryNode node, ref int files, ref int directories)

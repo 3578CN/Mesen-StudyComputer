@@ -99,6 +99,10 @@ struct FdcFileNode
 	string name;
 	uint32_t size = 0;
 	vector<FdcFileNode> children;
+	// 总容量（数据区可用字节数），仅对磁盘类型有意义
+	uint32_t capacity = 0;
+	// 可用空间（字节）
+	uint32_t freeBytes = 0;
 };
 
 static bool ReadBytes(FILE* file, long offset, void* buffer, size_t length)
@@ -411,6 +415,12 @@ static void AppendJson(const FdcFileNode& node, string& builder)
 	builder += "\"";
 	builder += ",\"size\":";
 	builder += std::to_string(node.size);
+	if(node.type == FdcNodeType::Disk) {
+		builder += ",\"capacity\":";
+		builder += std::to_string(node.capacity);
+		builder += ",\"free\":";
+		builder += std::to_string(node.freeBytes);
+	}
 	if(node.type != FdcNodeType::File) {
 		builder += ",\"children\":[";
 		for(size_t i = 0; i < node.children.size(); i++) {
@@ -641,6 +651,22 @@ int FloppyDriveController::GetDirectoryTreeJson(string& outJson)
 	rootNode.type = FdcNodeType::Disk;
 	rootNode.size = (uint32_t)(nDiskSize > 0 ? nDiskSize : 0);
 	rootNode.children = std::move(children);
+
+	// 计算并填充容量与可用空间信息（以字节为单位）
+	if(ctx.bytesPerCluster > 0 && ctx.totalClusters > 0) {
+		uint32_t capacity = ctx.totalClusters * ctx.bytesPerCluster;
+		uint32_t freeClusters = 0;
+		for(uint16_t c = 2; c < (uint16_t)(ctx.totalClusters + 2); ++c) {
+			uint16_t val = ReadFatValue(fatData, c);
+			if(val == 0) freeClusters++;
+		}
+		uint32_t freeBytes = freeClusters * ctx.bytesPerCluster;
+		rootNode.capacity = capacity;
+		rootNode.freeBytes = freeBytes;
+	} else {
+		rootNode.capacity = 0;
+		rootNode.freeBytes = 0;
+	}
 
 	string diskName = szDiskName;
 	if(diskName.empty()) {
