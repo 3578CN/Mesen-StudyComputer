@@ -22,7 +22,9 @@
         </Border>
 
         <Border BorderThickness="1" BorderBrush="{StaticResource MesenGrayBorderColor}">
-            <TreeView ItemsSource="{Binding Items}" HorizontalAlignment="Stretch" />
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Items}" HorizontalAlignment="Stretch" />
+            </ScrollViewer>
         </Border>
     </DockPanel>
 </Window>

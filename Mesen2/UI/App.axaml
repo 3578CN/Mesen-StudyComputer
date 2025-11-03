@@ -49,15 +49,19 @@
 			<TextBlock Text="{Binding, Converter={StaticResource Enum}}" />
 		</DataTemplate>
 		<!-- 全局注册 DiskDirectoryNode 的 DataTemplate，用于磁盘管理窗口的树形显示 -->
-		<DataTemplate DataType="vm:DiskDirectoryNode">
-			<StackPanel>
-				<StackPanel Orientation="Horizontal" Spacing="12">
-					<TextBlock Text="{Binding Name}" />
-					<TextBlock Text="{Binding SizeText}" Opacity="0.7" />
+			<DataTemplate DataType="vm:DiskDirectoryNode">
+				<StackPanel>
+					<!-- 每行可点击：绑定 SelectCommand（ViewModel 中已为文件节点分配命令） -->
+					<Button Command="{Binding SelectCommand}" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Padding="0" Margin="0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" MinHeight="14">
+						<Grid ColumnDefinitions="*,90">
+							<TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center" />
+							<TextBlock Grid.Column="1" Text="{Binding SizeText}" VerticalAlignment="Center" HorizontalAlignment="Right" Opacity="0.7" />
+						</Grid>
+					</Button>
+					<!-- 子项缩进（每级向右缩进） -->
+					<ItemsControl ItemsSource="{Binding Children}" Margin="14 0 0 0" />
 				</StackPanel>
-				<ItemsControl ItemsSource="{Binding Children}" Margin="14 2 0 0" />
-			</StackPanel>
-		</DataTemplate>
+			</DataTemplate>
 	</Application.DataTemplates>
 
 	<Application.Styles>
