@@ -55,7 +55,7 @@
 				<StackPanel>
 					<!-- 每行可点击：绑定 SelectCommand（ViewModel 中已为文件节点分配命令） -->
 					<Button Command="{Binding SelectCommand}" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Padding="0" Margin="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" MinHeight="14">
-						<Grid ColumnDefinitions="*,120,80,80">
+						<Grid ColumnDefinitions="120,50,50,80">
 							<!-- 第一列：名称（内部按 Depth 缩进） -->
 							<StackPanel Orientation="Horizontal" Grid.Column="0" Margin="{Binding Depth, Converter={StaticResource DepthToMarginConverter}}" VerticalAlignment="Center">
 								<TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
