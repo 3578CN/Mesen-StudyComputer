@@ -352,6 +352,14 @@ extern "C" {
 		outBuffer[copyLength] = 0;
 	}
 
+	// 将主机内存中的文件写入当前加载的磁盘镜像（调用 FloppyDriveController::AddFileFromBuffer）
+	DllExport int __stdcall Floppy_WriteFile(char* filename, uint8_t* data, uint32_t length)
+	{
+		if(!_fdc) return 0;
+		if(!filename) return 0;
+		return _fdc->AddFileFromBuffer(filename, data, length);
+	}
+
 	class PgoKeyManager : public IKeyManager
 	{
 	public:

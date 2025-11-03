@@ -29,6 +29,15 @@ public:
 	// 返回当前软驱是否处于读/写活动中（1: 活动中, 0: 空闲）
 	int IsActive();
 
+	/**
+	 * 将主机内存中的文件数据写入当前加载的 FAT12 镜像（根目录下）。
+	 * @param filename 要在镜像中创建/覆盖的目标文件名（仅文件名，不含路径），会被转换为短文件名 (8.3)
+	 * @param data 指向文件内容的字节缓冲区
+	 * @param length 缓冲区长度（字节）
+	 * @return 返回 1 表示成功，0 表示失败
+	 */
+	int AddFileFromBuffer(const char* filename, const unsigned char* data, unsigned int length);
+
 	// IO: nPort: 0-7
 	unsigned char Read(unsigned char nPort);
 	void Write(unsigned char nPort, unsigned nData);

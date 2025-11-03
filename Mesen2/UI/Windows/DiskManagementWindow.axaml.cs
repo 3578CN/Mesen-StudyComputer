@@ -1,10 +1,16 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Mesen.ViewModels;
 using Mesen.Interop;
+using Mesen.Utilities;
+using Mesen.Localization;
 using System;
+using System.IO;
+using System.Linq;
 
 namespace Mesen.Windows
 {
@@ -22,6 +28,8 @@ namespace Mesen.Windows
                 _model = new DiskManagementViewModel();
                 DataContext = _model;
             }
+            // 支持拖放文件到窗口以写入镜像
+            AddHandler(DragDrop.DropEvent, OnDrop);
         }
 
         private void InitializeComponent()
@@ -88,5 +96,37 @@ namespace Mesen.Windows
                     break;
             }
         }
+
+        private void OnDrop(object? sender, DragEventArgs e)
+        {
+            var files = e.Data.GetFiles();
+            if(files == null || !files.Any()) return;
+            try {
+                var paths = files.Select(f => f.Path.LocalPath).Where(p => !string.IsNullOrEmpty(p)).ToArray();
+                if(paths.Length == 0) return;
+
+                foreach(var path in paths) {
+                    if(!File.Exists(path)) {
+                        DisplayMessageHelper.DisplayMessage("Error", ResourceHelper.GetMessage("FileNotFound", path));
+                        continue;
+                    }
+
+                    string fileName = Path.GetFileName(path);
+                    byte[] buffer = File.ReadAllBytes(path);
+
+                    bool ok = EmuApi.FloppyWriteFile(fileName, buffer);
+                    if(!ok) {
+                        DisplayMessageHelper.DisplayMessage("Error", "写入镜像失败: " + fileName);
+                    } else {
+                        // 刷新视图
+                        Dispatcher.UIThread.Post(() => {
+                            try { _model?.Refresh(); } catch { }
+                        });
+                    }
+                }
+            } catch(Exception ex) {
+                DisplayMessageHelper.DisplayMessage("Error", ex.Message);
+            }
+    }
     }
 }

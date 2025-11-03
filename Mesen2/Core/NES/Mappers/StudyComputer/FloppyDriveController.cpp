@@ -240,6 +240,28 @@ static uint16_t ReadFatValue(const vector<uint8_t>& fat, uint16_t cluster)
 	return value;
 }
 
+static bool WriteFatValue(vector<uint8_t>& fat, uint16_t cluster, uint16_t value)
+{
+	uint32_t index = cluster + cluster / 2;
+	if(index + 1 >= fat.size()) {
+		return false;
+	}
+	uint16_t orig = (uint16_t)(fat[index] | (fat[index + 1] << 8));
+	if(cluster & 1) {
+		// odd cluster: store high 12 bits
+		// keep low 4 bits
+		orig &= 0x000F;
+		orig |= (uint16_t)((value & 0x0FFF) << 4);
+	} else {
+		// even cluster: store low 12 bits
+		orig &= 0xF000;
+		orig |= (uint16_t)(value & 0x0FFF);
+	}
+	fat[index] = (uint8_t)(orig & 0xFF);
+	fat[index + 1] = (uint8_t)((orig >> 8) & 0xFF);
+	return true;
+}
+
 static bool ReadClusterChain(FILE* file, const Fat12Context& ctx, const vector<uint8_t>& fat, uint16_t startCluster, vector<uint8_t>& outData)
 {
 	outData.clear();
@@ -1261,4 +1283,181 @@ int FloppyDriveController::IsActive()
 		return 1;
 	}
 	return 0;
+}
+
+/**
+ * 将主机缓冲区写入当前加载的 FAT12 镜像（写入根目录）。
+ * 简化实现：仅支持写入根目录（不处理长文件名 LFN），目标文件名会被转换为短名 8.3，
+ * 若镜像中存在同名短名文件则覆盖其内容。
+ */
+int FloppyDriveController::AddFileFromBuffer(const char* filename, const unsigned char* data, unsigned int length)
+{
+	if(!pDiskFile || !filename) return 0;
+	// 不在 I/O 活动期间写入，以避免与正在运行的 FDC 操作冲突
+	if(IsActive()) return 0;
+
+	FilePositionGuard guard(pDiskFile);
+
+	Fat12Context ctx;
+	if(!LoadFat12Context(pDiskFile, nDiskSize, ctx)) {
+		return 0;
+	}
+
+	vector<uint8_t> fatData;
+	if(!LoadFatTable(pDiskFile, ctx, fatData)) {
+		return 0;
+	}
+
+	// 读取根目录表
+	if(ctx.rootEntryCount == 0) return 0;
+	vector<uint8_t> rootBuffer((size_t)ctx.rootEntryCount * 32);
+	if(!ReadBytes(pDiskFile, (long)ctx.rootDirOffset, rootBuffer.data(), rootBuffer.size())) {
+		return 0;
+	}
+
+	// 计算短文件名（简单实现：取文件名部分，转大写，非字母数字替换为 '_'，截断）
+	string name(filename);
+	size_t pos = name.find_last_of("/\\");
+	if(pos != string::npos) name = name.substr(pos + 1);
+	// 转为 UTF-8 的 ASCII 子集（简单处理）并大写
+	string up;
+	for(char ch : name) up.push_back((char)toupper((unsigned char)ch));
+
+	string base = up;
+	string ext = "";
+	size_t dot = up.find_last_of('.');
+	if(dot != string::npos) {
+		ext = base.substr(dot + 1);
+		base = base.substr(0, dot);
+	}
+
+	string shortName(8, ' ');
+	string shortExt(3, ' ');
+	int idx = 0;
+	for(char ch : base) {
+		if(idx >= 8) break;
+		char c = ch;
+		if(!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))) c = '_';
+		shortName[idx++] = c;
+	}
+	idx = 0;
+	for(char ch : ext) {
+		if(idx >= 3) break;
+		char c = ch;
+		if(!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))) c = '_';
+		shortExt[idx++] = c;
+	}
+
+	// 查找可用目录项或者同名项以便覆盖
+	int freeEntryIndex = -1;
+	for(uint32_t i = 0; i < ctx.rootEntryCount; i++) {
+		uint8_t first = rootBuffer[i * 32];
+		if(first == 0x00) {
+			if(freeEntryIndex == -1) freeEntryIndex = (int)i;
+			break; // 后续均为空
+		}
+		if(first == 0xE5) {
+			if(freeEntryIndex == -1) freeEntryIndex = (int)i;
+			continue;
+		}
+		uint8_t attr = rootBuffer[i * 32 + 11];
+		if(attr == 0x0F) continue; // LFN
+
+		bool match = true;
+		for(int k = 0; k < 8; k++) {
+			if(rootBuffer[i * 32 + k] != (uint8_t)shortName[k]) { match = false; break; }
+		}
+		for(int k = 0; k < 3 && match; k++) {
+			if(rootBuffer[i * 32 + 8 + k] != (uint8_t)shortExt[k]) { match = false; break; }
+		}
+		if(match) {
+			freeEntryIndex = (int)i; // 覆盖该条目
+			// 释放原有簇链
+			uint16_t firstCluster = (uint16_t)(rootBuffer[i * 32 + 26] | (rootBuffer[i * 32 + 27] << 8));
+			if(firstCluster >= 2) {
+				uint16_t cluster = firstCluster;
+				uint32_t maxIter = ctx.totalClusters + 2;
+				uint32_t iter = 0;
+				while(cluster >= 2 && cluster < 0xFF0 && iter++ < maxIter) {
+					uint16_t next = ReadFatValue(fatData, cluster);
+					WriteFatValue(fatData, cluster, 0);
+					if(next >= 0xFF8 || next == 0) break;
+					cluster = next;
+				}
+			}
+			break;
+		}
+	}
+	if(freeEntryIndex == -1) return 0; // 没有可用目录项
+
+	// 计算需要的簇数并寻找空闲簇
+	uint32_t clustersNeeded = 0;
+	if(length > 0) clustersNeeded = (length + ctx.bytesPerCluster - 1) / ctx.bytesPerCluster;
+
+	vector<uint16_t> freeClusters;
+	for(uint16_t c = 2; c < (uint16_t)(ctx.totalClusters + 2) && freeClusters.size() < clustersNeeded; ++c) {
+		if(ReadFatValue(fatData, c) == 0) freeClusters.push_back(c);
+	}
+	if(freeClusters.size() < clustersNeeded) return 0; // 空间不足
+
+	// 将簇链写入 FAT（12-bit 编码）
+	for(size_t i = 0; i < freeClusters.size(); ++i) {
+		uint16_t cur = freeClusters[i];
+		uint16_t val = (uint16_t)((i + 1 < freeClusters.size()) ? freeClusters[i + 1] : 0xFFF);
+		if(!WriteFatValue(fatData, cur, val)) return 0;
+	}
+
+	// 将文件数据写到相应簇
+	const unsigned char* ptr = data;
+	size_t remaining = length;
+	for(size_t i = 0; i < freeClusters.size(); ++i) {
+		uint16_t cluster = freeClusters[i];
+		long offset = (long)(ctx.dataOffset + (uint32_t)(cluster - 2) * ctx.bytesPerCluster);
+		if(::fseek(pDiskFile, offset, SEEK_SET) != 0) return 0;
+		size_t toWrite = remaining > ctx.bytesPerCluster ? ctx.bytesPerCluster : remaining;
+		if(toWrite > 0) {
+			if(::fwrite(ptr, 1, toWrite, pDiskFile) != toWrite) return 0;
+			ptr += toWrite;
+			remaining -= toWrite;
+		}
+		// 若簇未被填满，补零
+		if(toWrite < ctx.bytesPerCluster) {
+			uint32_t fill = ctx.bytesPerCluster - (uint32_t)toWrite;
+			static vector<uint8_t> zeroBuf;
+			if(zeroBuf.size() < fill) zeroBuf.resize(fill);
+			if(::fwrite(zeroBuf.data(), 1, fill, pDiskFile) != fill) return 0;
+		}
+	}
+
+	// 将修改后的 FAT 写回磁盘（所有 FAT 副本）
+	uint32_t fatSize = ctx.sectorsPerFat * ctx.bytesPerSector;
+	for(uint32_t copy = 0; copy < ctx.fatCount; ++copy) {
+		long fatPos = (long)(ctx.fatOffset + copy * fatSize);
+		if(::fseek(pDiskFile, fatPos, SEEK_SET) != 0) return 0;
+		if(::fwrite(fatData.data(), 1, fatData.size(), pDiskFile) != fatData.size()) return 0;
+	}
+
+	// 写入或覆盖根目录项
+	uint8_t entry[32];
+	memset(entry, 0, sizeof(entry));
+	memcpy(entry, shortName.c_str(), 8);
+	memcpy(entry + 8, shortExt.c_str(), 3);
+	entry[11] = 0x20; // Archive
+	uint16_t firstClusterAssigned = freeClusters.empty() ? 0 : freeClusters[0];
+	entry[26] = (uint8_t)(firstClusterAssigned & 0xFF);
+	entry[27] = (uint8_t)((firstClusterAssigned >> 8) & 0xFF);
+	entry[28] = (uint8_t)(length & 0xFF);
+	entry[29] = (uint8_t)((length >> 8) & 0xFF);
+	entry[30] = (uint8_t)((length >> 16) & 0xFF);
+	entry[31] = (uint8_t)((length >> 24) & 0xFF);
+
+	memcpy(rootBuffer.data() + freeEntryIndex * 32, entry, 32);
+
+	// 将根目录写回文件
+	if(::fseek(pDiskFile, ctx.rootDirOffset, SEEK_SET) != 0) return 0;
+	if(::fwrite(rootBuffer.data(), 1, rootBuffer.size(), pDiskFile) != rootBuffer.size()) return 0;
+
+	::fflush(pDiskFile);
+
+	return 1;
 }

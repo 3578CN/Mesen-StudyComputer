@@ -159,6 +159,24 @@ namespace Mesen.Interop
 				FloppyGetDirectoryTreeNative(buffer, length);
 			}, 262144);
 		}
+
+		/// <summary>
+		/// 将主机端缓冲区写入当前加载的软盘镜像（目标文件名为 filename，数据由 data 提供）。
+		/// 返回 true 表示成功。
+		/// </summary>
+		[DllImport(DllPath, EntryPoint = "Floppy_WriteFile")]
+		private static extern int FloppyWriteFileNative([MarshalAs(UnmanagedType.LPStr)] string filename, [In] byte[] data, UInt32 length);
+
+		public static bool FloppyWriteFile(string filename, byte[] data)
+		{
+			if(string.IsNullOrEmpty(filename) || data == null) return false;
+			try {
+				int res = FloppyWriteFileNative(filename, data, (uint)data.Length);
+				return res == 1;
+			} catch {
+				return false;
+			}
+		}
 	}
 
 	public struct TimingInfo

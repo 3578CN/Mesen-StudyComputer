@@ -8,6 +8,7 @@
     x:Class="Mesen.Windows.DiskManagementWindow"
     Width="420" Height="520"
     Title="磁盘管理"
+    DragDrop.AllowDrop="True"
     x:DataType="vm:DiskManagementViewModel">
     <Design.DataContext>
         <vm:DiskManagementViewModel />
