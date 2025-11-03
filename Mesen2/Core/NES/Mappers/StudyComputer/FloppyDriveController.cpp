@@ -551,6 +551,11 @@ int FloppyDriveController::LoadDiskImage(const char* filePath)
 	// 标记磁盘已改变（插入）
 	bDiskChanged = 1;
 
+	// 发送 "磁盘已加载" 通知，供托管层刷新 UI
+	if(_emu) {
+		_emu->GetNotificationManager()->SendNotification(ConsoleNotificationType::FloppyLoaded);
+	}
+
 	// reset data transfer offset
 	nFdcDataOffset = 0;
 
@@ -596,6 +601,11 @@ int FloppyDriveController::Eject()
 
 	// 标记磁盘已改变（弹出）
 	bDiskChanged = 1;
+
+	// 发送 "磁盘已弹出" 通知，供托管层刷新 UI
+	if(_emu) {
+		_emu->GetNotificationManager()->SendNotification(ConsoleNotificationType::FloppyEjected);
+	}
 
 	return 1;
 }

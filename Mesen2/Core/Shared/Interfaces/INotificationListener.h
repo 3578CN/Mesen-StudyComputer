@@ -32,6 +32,9 @@ enum class ConsoleNotificationType
 	// 软驱 I/O 开始/结束通知
 	FloppyIoStarted,
 	FloppyIoStopped,
+	// 软盘镜像加载/弹出通知（加载镜像或弹出镜像时发送）
+	FloppyLoaded,
+	FloppyEjected,
 };
 
 struct GameLoadedEventParams

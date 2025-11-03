@@ -72,6 +72,8 @@ namespace Mesen.Windows
             switch(e.NotificationType) {
                 case ConsoleNotificationType.FloppyIoStarted:
                 case ConsoleNotificationType.FloppyIoStopped:
+                case ConsoleNotificationType.FloppyLoaded:
+                case ConsoleNotificationType.FloppyEjected:
                         // 在 UI 线程上重启去抖定时器：200ms 内合并多次通知为一次刷新
                         Dispatcher.UIThread.Post(() => {
                             try {

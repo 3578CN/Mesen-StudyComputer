@@ -90,7 +90,10 @@ namespace Mesen.Interop
 		,
 		// 软驱 I/O 开始/结束通知
 		FloppyIoStarted,
-		FloppyIoStopped
+		FloppyIoStopped,
+		// 软盘镜像加载/弹出通知（镜像载入或弹出时发送）
+		FloppyLoaded,
+		FloppyEjected
 	}
 
 	public struct GameLoadedEventParams
