@@ -13,11 +13,10 @@
         <vm:DiskManagementViewModel />
     </Design.DataContext>
 
-    <!-- 空的对话框，保留最小可见内容（原始占位注释，仅为记录） -->
+    <!-- 磁盘管理对话框：已移除手动刷新按钮（改为监听磁盘 I/O 通知自动刷新） -->
     <DockPanel Margin="8">
         <Border DockPanel.Dock="Top" Margin="0 0 0 8">
             <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <Button Width="80" Content="刷新" Command="{Binding RefreshCommand}" />
                 <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
             </StackPanel>
         </Border>

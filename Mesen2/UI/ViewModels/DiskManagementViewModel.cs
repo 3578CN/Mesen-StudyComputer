@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -99,16 +98,10 @@ namespace Mesen.ViewModels
 		}
 
 		/// <summary>
-		/// 刷新目录树的命令。
-		/// </summary>
-		public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
-
-		/// <summary>
-		/// 构造函数，初始化命令并在非设计模式下立即刷新。
+		/// 构造函数，在非设计模式下立即刷新目录数据。
 		/// </summary>
 		public DiskManagementViewModel()
 		{
-			RefreshCommand = ReactiveCommand.Create(Refresh);
 			if(!Design.IsDesignMode) {
 				Refresh();
 			}
@@ -116,8 +109,9 @@ namespace Mesen.ViewModels
 
 		/// <summary>
 		/// 调用互操作层获取目录树并更新绑定。
+		/// 外部可调用（例如通过通知触发自动刷新）。
 		/// </summary>
-		private void Refresh()
+		public void Refresh()
 		{
 			try {
 				string json = EmuApi.FloppyGetDirectoryTree();
