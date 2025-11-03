@@ -54,10 +54,7 @@ namespace Mesen.ViewModels
 		/// </summary>
 		public bool HasChildren => Children.Count > 0;
 
-		/// <summary>
-		/// 当节点为文件时，可在 UI 上绑定的选择命令。
-		/// </summary>
-		public ICommand? SelectCommand { get; set; }
+
 
 		/// <summary>
 		/// 用于 UI 显示的大小描述。
@@ -75,6 +72,26 @@ namespace Mesen.ViewModels
 				return $"{Size} 字节";
 			}
 		}
+
+		/// <summary>
+		/// 当节点为文件时，可在 UI 上绑定的选择命令。
+		/// </summary>
+		public System.Windows.Input.ICommand? SelectCommand { get; set; }
+
+		/// <summary>
+		/// 节点深度，用于计算缩进（由 ViewModel 在解析时设置）。
+		/// </summary>
+		public int Depth { get; set; }
+
+		/// <summary>
+		/// 用于 UI 显示的类型文本（文件/文件夹/磁盘）。
+		/// </summary>
+		public string TypeText => IsDisk ? "磁盘" : (IsDirectory ? "文件夹" : "文件");
+
+		/// <summary>
+		/// 修改时间文本（如果可用）。
+		/// </summary>
+		public string ModifiedText { get; set; } = string.Empty;
 	}
 
 	/// <summary>
@@ -164,9 +181,10 @@ namespace Mesen.ViewModels
 				using JsonDocument doc = JsonDocument.Parse(json);
 				switch(doc.RootElement.ValueKind) {
 					case JsonValueKind.Object:
-						return ParseNode(doc.RootElement);
+						// 从 depth=-1 开始，使根的直接子项 depth=0
+						return ParseNode(doc.RootElement, -1);
 					case JsonValueKind.Array:
-						return doc.RootElement.EnumerateArray().Select(ParseNode).FirstOrDefault();
+						return doc.RootElement.EnumerateArray().Select(e => ParseNode(e, -1)).FirstOrDefault();
 					default:
 						return null;
 				}
@@ -175,7 +193,7 @@ namespace Mesen.ViewModels
 			}
 		}
 
-		private static DiskDirectoryNode ParseNode(JsonElement element)
+		private static DiskDirectoryNode ParseNode(JsonElement element, int depth)
 		{
 			string name = element.TryGetProperty("name", out JsonElement nameProp) ? nameProp.GetString() ?? string.Empty : string.Empty;
 			string type = element.TryGetProperty("type", out JsonElement typeProp) ? typeProp.GetString() ?? "file" : "file";
@@ -189,12 +207,20 @@ namespace Mesen.ViewModels
 			List<DiskDirectoryNode> children = new();
 			if(element.TryGetProperty("children", out JsonElement childrenProp) && childrenProp.ValueKind == JsonValueKind.Array) {
 				foreach(JsonElement child in childrenProp.EnumerateArray()) {
-					DiskDirectoryNode childNode = ParseNode(child);
+					DiskDirectoryNode childNode = ParseNode(child, depth + 1);
 					children.Add(childNode);
 				}
 			}
 
-			return new DiskDirectoryNode(name, isDirectory, isDisk, size, children);
+			var node = new DiskDirectoryNode(name, isDirectory, isDisk, size, children);
+			// 设置深度（根的子项为 0）
+			node.Depth = Math.Max(0, depth);
+			// 如果 JSON 中包含 modified 字段则解析（native 层可扩展以提供该字段）
+			if(element.TryGetProperty("modified", out JsonElement modProp) && modProp.ValueKind == JsonValueKind.String) {
+				node.ModifiedText = modProp.GetString() ?? string.Empty;
+			}
+
+			return node;
 		}
 
 		private static string BuildStatus(DiskDirectoryNode root)

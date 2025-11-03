@@ -23,7 +23,7 @@
 
         <Border BorderThickness="1" BorderBrush="{StaticResource MesenGrayBorderColor}">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding Items}" HorizontalAlignment="Stretch" />
+                <ItemsControl ItemsSource="{Binding Items}" HorizontalAlignment="Stretch" MinWidth="{Binding Bounds.Width, RelativeSource={RelativeSource AncestorType=Border}}" />
             </ScrollViewer>
         </Border>
     </DockPanel>

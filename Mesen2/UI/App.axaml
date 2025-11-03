@@ -32,7 +32,9 @@
 
 		<l:EnumConverter x:Key="Enum" />
 		<u:FontNameConverter x:Key="FontNameConverter" />
-		<u:NullTextConverter x:Key="NullTextConverter" />
+			<u:NullTextConverter x:Key="NullTextConverter" />
+			<!-- 缩进转换器：将 Depth 转为左侧 Margin -->
+			<u:DepthToMarginConverter x:Key="DepthToMarginConverter" />
 		
 		<VisualBrush x:Key="ViewerBgBrush" TileMode="Tile" Stretch="None" AlignmentX="Left" AlignmentY="Top" SourceRect="0,0,5,5" DestinationRect="0,0,5,5">
 			<VisualBrush.Visual>
@@ -52,14 +54,22 @@
 			<DataTemplate DataType="vm:DiskDirectoryNode">
 				<StackPanel>
 					<!-- 每行可点击：绑定 SelectCommand（ViewModel 中已为文件节点分配命令） -->
-					<Button Command="{Binding SelectCommand}" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Padding="0" Margin="0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" MinHeight="14">
-						<Grid ColumnDefinitions="*,90">
-							<TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center" />
-							<TextBlock Grid.Column="1" Text="{Binding SizeText}" VerticalAlignment="Center" HorizontalAlignment="Right" Opacity="0.7" />
+					<Button Command="{Binding SelectCommand}" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Padding="0" Margin="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" MinHeight="14">
+						<Grid ColumnDefinitions="*,120,80,80">
+							<!-- 第一列：名称（内部按 Depth 缩进） -->
+							<StackPanel Orientation="Horizontal" Grid.Column="0" Margin="{Binding Depth, Converter={StaticResource DepthToMarginConverter}}" VerticalAlignment="Center">
+								<TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+							</StackPanel>
+							<!-- 修改时间 -->
+							<TextBlock Grid.Column="1" Text="{Binding ModifiedText}" VerticalAlignment="Center" Opacity="0.8" />
+							<!-- 类型 -->
+							<TextBlock Grid.Column="2" Text="{Binding TypeText}" VerticalAlignment="Center" Opacity="0.8" />
+							<!-- 大小 右对齐 -->
+							<TextBlock Grid.Column="3" Text="{Binding SizeText}" VerticalAlignment="Center" HorizontalAlignment="Right" Opacity="0.8" />
 						</Grid>
 					</Button>
-					<!-- 子项缩进（每级向右缩进） -->
-					<ItemsControl ItemsSource="{Binding Children}" Margin="14 0 0 0" />
+					<!-- 子项不再整体右移，缩进通过 Depth 应用到名称列内部 -->
+					<ItemsControl ItemsSource="{Binding Children}" Margin="0" HorizontalAlignment="Stretch" />
 				</StackPanel>
 			</DataTemplate>
 	</Application.DataTemplates>
