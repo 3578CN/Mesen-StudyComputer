@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <array>
 #if defined(_MSC_VER)
 #include <share.h>
 #include <io.h>
@@ -13,6 +14,7 @@
 #include "Core/Shared/Emulator.h"
 #include "Core/Shared/Interfaces/INotificationListener.h"
 #include "Core/Shared/NotificationManager.h"
+#include "Utilities/StringUtilities.h"
 
 // https://www.cpcwiki.eu/index.php/765_FDC
 
@@ -51,6 +53,355 @@ static const FloppyDriveController::FDC_CMD_DESC FdcCmdTable[32] =
 	/* 0x1E */ {1, 1, FloppyDriveController::FdcNop},
 	/* 0x1F */ {1, 1, FloppyDriveController::FdcNop},
 };
+
+namespace
+{
+struct FilePositionGuard
+{
+	FILE* handle;
+	long position;
+	FilePositionGuard(FILE* fp) : handle(fp), position(fp ? ::ftell(fp) : -1) { }
+	~FilePositionGuard()
+	{
+		if(handle && position >= 0) {
+			::fseek(handle, position, SEEK_SET);
+		}
+	}
+};
+
+struct Fat12Context
+{
+	uint32_t bytesPerSector = 0;
+	uint32_t sectorsPerCluster = 0;
+	uint32_t reservedSectors = 0;
+	uint32_t fatCount = 0;
+	uint32_t rootEntryCount = 0;
+	uint32_t sectorsPerFat = 0;
+	uint32_t rootDirSectors = 0;
+	uint32_t fatOffset = 0;
+	uint32_t rootDirOffset = 0;
+	uint32_t dataOffset = 0;
+	uint32_t bytesPerCluster = 0;
+	uint32_t totalSectors = 0;
+	uint32_t totalClusters = 0;
+};
+
+enum class FdcNodeType
+{
+	Disk,
+	Directory,
+	File
+};
+
+struct FdcFileNode
+{
+	FdcNodeType type = FdcNodeType::File;
+	string name;
+	uint32_t size = 0;
+	vector<FdcFileNode> children;
+};
+
+static bool ReadBytes(FILE* file, long offset, void* buffer, size_t length)
+{
+	if(!file || !buffer || length == 0) {
+		return false;
+	}
+	if(::fseek(file, offset, SEEK_SET) != 0) {
+		return false;
+	}
+	return ::fread(buffer, 1, length, file) == length;
+}
+
+static bool LoadFat12Context(FILE* file, int diskSize, Fat12Context& ctx)
+{
+	std::array<uint8_t, 512> sector{};
+	if(!ReadBytes(file, 0, sector.data(), sector.size())) {
+		return false;
+	}
+
+	uint16_t bytesPerSector = (uint16_t)(sector[11] | (sector[12] << 8));
+	uint8_t sectorsPerCluster = sector[13];
+	uint16_t reservedSectors = (uint16_t)(sector[14] | (sector[15] << 8));
+	uint8_t fatCount = sector[16];
+	uint16_t rootEntryCount = (uint16_t)(sector[17] | (sector[18] << 8));
+	uint16_t totalSectors16 = (uint16_t)(sector[19] | (sector[20] << 8));
+	uint16_t sectorsPerFat = (uint16_t)(sector[22] | (sector[23] << 8));
+	uint32_t totalSectors32 = (uint32_t)(sector[32] | (sector[33] << 8) | (sector[34] << 16) | (sector[35] << 24));
+
+	uint32_t totalSectors = totalSectors16 != 0 ? totalSectors16 : totalSectors32;
+	if(totalSectors == 0 && bytesPerSector != 0) {
+		totalSectors = diskSize > 0 ? (uint32_t)(diskSize / bytesPerSector) : 0;
+	}
+
+	if(bytesPerSector == 0 || sectorsPerCluster == 0 || fatCount == 0 || sectorsPerFat == 0) {
+		return false;
+	}
+
+	ctx.bytesPerSector = bytesPerSector;
+	ctx.sectorsPerCluster = sectorsPerCluster;
+	ctx.reservedSectors = reservedSectors;
+	ctx.fatCount = fatCount;
+	ctx.rootEntryCount = rootEntryCount;
+	ctx.sectorsPerFat = sectorsPerFat;
+	ctx.rootDirSectors = (uint32_t)((rootEntryCount * 32 + bytesPerSector - 1) / bytesPerSector);
+	ctx.fatOffset = ctx.reservedSectors * ctx.bytesPerSector;
+	ctx.rootDirOffset = (ctx.reservedSectors + ctx.fatCount * ctx.sectorsPerFat) * ctx.bytesPerSector;
+	ctx.dataOffset = (ctx.reservedSectors + ctx.fatCount * ctx.sectorsPerFat + ctx.rootDirSectors) * ctx.bytesPerSector;
+	ctx.bytesPerCluster = ctx.bytesPerSector * ctx.sectorsPerCluster;
+	ctx.totalSectors = totalSectors;
+	uint32_t dataSectors = (totalSectors > (ctx.reservedSectors + ctx.fatCount * ctx.sectorsPerFat + ctx.rootDirSectors)) ?
+		(totalSectors - (ctx.reservedSectors + ctx.fatCount * ctx.sectorsPerFat + ctx.rootDirSectors)) : 0;
+	ctx.totalClusters = (ctx.sectorsPerCluster > 0) ? dataSectors / ctx.sectorsPerCluster : 0;
+
+	return ctx.bytesPerSector > 0 && ctx.bytesPerCluster > 0;
+}
+
+static bool LoadFatTable(FILE* file, const Fat12Context& ctx, vector<uint8_t>& fatData)
+{
+	uint32_t fatSize = ctx.sectorsPerFat * ctx.bytesPerSector;
+	if(fatSize == 0) {
+		return false;
+	}
+	fatData.resize(fatSize);
+	return ReadBytes(file, (long)ctx.fatOffset, fatData.data(), fatData.size());
+}
+
+static string TrimTrailingSpaces(const string& value)
+{
+	size_t endPos = value.find_last_not_of(' ');
+	if(endPos == string::npos) {
+		return "";
+	}
+	return value.substr(0, endPos + 1);
+}
+
+static string BuildShortName(const uint8_t* namePart, const uint8_t* extPart)
+{
+	string baseName(reinterpret_cast<const char*>(namePart), 8);
+	if(!baseName.empty() && (uint8_t)baseName[0] == 0x05) {
+		baseName[0] = (char)0xE5;
+	}
+	baseName = TrimTrailingSpaces(baseName);
+	string extension(reinterpret_cast<const char*>(extPart), 3);
+	extension = TrimTrailingSpaces(extension);
+	if(extension.empty()) {
+		return baseName;
+	}
+	if(baseName.empty()) {
+		return extension;
+	}
+	return baseName + "." + extension;
+}
+
+static std::u16string ExtractLongNameSegment(const uint8_t* entry)
+{
+	std::u16string segment;
+	auto appendRange = [&](int offset, int count) {
+		for(int i = 0; i < count; i++) {
+			char16_t ch = (char16_t)(entry[offset + i * 2] | (entry[offset + i * 2 + 1] << 8));
+			if(ch == 0x0000 || ch == (char16_t)0xFFFF) {
+				return false;
+			}
+			segment.push_back(ch);
+		}
+		return true;
+	};
+
+	bool cont = appendRange(1, 5);
+	if(cont) cont = appendRange(14, 6);
+	if(cont) appendRange(28, 2);
+	return segment;
+}
+
+static string BuildLongName(const vector<std::u16string>& segments)
+{
+	if(segments.empty()) {
+		return "";
+	}
+	std::u16string combined;
+	for(const auto& part : segments) {
+		combined += part;
+	}
+	return utf8::utf8::encode(combined);
+}
+
+static uint16_t ReadFatValue(const vector<uint8_t>& fat, uint16_t cluster)
+{
+	uint32_t index = cluster + cluster / 2;
+	if(index + 1 >= fat.size()) {
+		return 0xFFF;
+	}
+	uint16_t value = (uint16_t)(fat[index] | (fat[index + 1] << 8));
+	if(cluster & 1) {
+		value >>= 4;
+	} else {
+		value &= 0x0FFF;
+	}
+	return value;
+}
+
+static bool ReadClusterChain(FILE* file, const Fat12Context& ctx, const vector<uint8_t>& fat, uint16_t startCluster, vector<uint8_t>& outData)
+{
+	outData.clear();
+	if(startCluster < 2 || ctx.bytesPerCluster == 0) {
+		return true;
+	}
+
+	vector<uint8_t> buffer(ctx.bytesPerCluster);
+	uint32_t maxIterations = ctx.totalClusters + 2;
+	uint32_t iteration = 0;
+	uint16_t cluster = startCluster;
+	while(cluster >= 2 && cluster < 0xFF0) {
+		if(iteration++ > maxIterations) {
+			break;
+		}
+		if((cluster - 2) >= ctx.totalClusters) {
+			break;
+		}
+		long offset = (long)(ctx.dataOffset + (uint32_t)(cluster - 2) * ctx.bytesPerCluster);
+		if(!ReadBytes(file, offset, buffer.data(), buffer.size())) {
+			return false;
+		}
+		outData.insert(outData.end(), buffer.begin(), buffer.end());
+		uint16_t nextCluster = ReadFatValue(fat, cluster);
+		if(nextCluster >= 0xFF8) {
+			break;
+		}
+		if(nextCluster == 0) {
+			break;
+		}
+		cluster = nextCluster;
+	}
+	return true;
+}
+
+static void ParseDirectoryData(FILE* file, const Fat12Context& ctx, const vector<uint8_t>& fat, const uint8_t* data, size_t byteCount, vector<FdcFileNode>& output)
+{
+	output.clear();
+	if(!data || byteCount == 0) {
+		return;
+	}
+
+	vector<std::u16string> longNameParts;
+	size_t entryCount = byteCount / 32;
+	for(size_t i = 0; i < entryCount; i++) {
+		const uint8_t* entry = data + i * 32;
+		uint8_t firstByte = entry[0];
+		if(firstByte == 0x00) {
+			break;
+		}
+		uint8_t attr = entry[11];
+		if(attr == 0x0F) {
+			uint8_t sequence = entry[0] & 0x1F;
+			if((entry[0] & 0x40) != 0) {
+				longNameParts.clear();
+				longNameParts.resize(sequence);
+			}
+			if(sequence >= 1 && sequence <= longNameParts.size()) {
+				longNameParts[sequence - 1] = ExtractLongNameSegment(entry);
+			}
+			continue;
+		}
+		if(firstByte == 0xE5) {
+			longNameParts.clear();
+			continue;
+		}
+		if(attr & 0x08) {
+			longNameParts.clear();
+			continue;
+		}
+
+		string name;
+		if(!longNameParts.empty()) {
+			name = BuildLongName(longNameParts);
+		}
+		if(name.empty()) {
+			name = BuildShortName(entry, entry + 8);
+		}
+		longNameParts.clear();
+		if(name.empty()) {
+			continue;
+		}
+
+		bool isDirectory = (attr & 0x10) != 0;
+		if(isDirectory && (name == "." || name == "..")) {
+			continue;
+		}
+
+		uint16_t firstClusterLow = (uint16_t)(entry[26] | (entry[27] << 8));
+		uint16_t firstClusterHigh = (uint16_t)(entry[20] | (entry[21] << 8));
+		uint32_t firstClusterCombined = (uint32_t)firstClusterLow | ((uint32_t)firstClusterHigh << 16);
+		uint16_t firstCluster = (uint16_t)firstClusterCombined;
+		uint32_t fileSize = (uint32_t)(entry[28] | (entry[29] << 8) | (entry[30] << 16) | (entry[31] << 24));
+
+		FdcFileNode node;
+		node.type = isDirectory ? FdcNodeType::Directory : FdcNodeType::File;
+		node.name = name;
+		node.size = fileSize;
+
+		if(isDirectory && firstCluster >= 2) {
+			vector<uint8_t> dirData;
+			if(ReadClusterChain(file, ctx, fat, firstCluster, dirData)) {
+				ParseDirectoryData(file, ctx, fat, dirData.data(), dirData.size(), node.children);
+			}
+		}
+
+		output.push_back(std::move(node));
+	}
+}
+
+static void JsonEscape(const string& text, string& builder)
+{
+	for(char ch : text) {
+		switch(ch) {
+			case '\\': builder += "\\\\"; break;
+			case '\"': builder += "\\\""; break;
+			case '\b': builder += "\\b"; break;
+			case '\f': builder += "\\f"; break;
+			case '\n': builder += "\\n"; break;
+			case '\r': builder += "\\r"; break;
+			case '\t': builder += "\\t"; break;
+			default:
+				if(static_cast<unsigned char>(ch) < 0x20) {
+					char buffer[7];
+					snprintf(buffer, sizeof(buffer), "\\u%04X", (unsigned)(unsigned char)ch);
+					builder += buffer;
+				} else {
+					builder += ch;
+				}
+				break;
+		}
+	}
+}
+
+static void AppendJson(const FdcFileNode& node, string& builder)
+{
+	builder += "{";
+	builder += "\"name\":\"";
+	JsonEscape(node.name, builder);
+	builder += "\"";
+	builder += ",\"type\":\"";
+	switch(node.type) {
+		case FdcNodeType::Disk: builder += "disk"; break;
+		case FdcNodeType::Directory: builder += "dir"; break;
+		case FdcNodeType::File: builder += "file"; break;
+	}
+	builder += "\"";
+	builder += ",\"size\":";
+	builder += std::to_string(node.size);
+	if(node.type != FdcNodeType::File) {
+		builder += ",\"children\":[";
+		for(size_t i = 0; i < node.children.size(); i++) {
+			AppendJson(node.children[i], builder);
+			if(i + 1 < node.children.size()) {
+				builder += ",";
+			}
+		}
+		builder += "]";
+	}
+	builder += "}";
+}
+}
 
 /*
  * 感知中断状态 (SENSE INTERRUPT STATUS)
@@ -226,6 +577,63 @@ int FloppyDriveController::SaveDiskImage()
 		return 0;
 	}
 
+	return 1;
+}
+
+/// <summary>
+/// 解析 FAT12 镜像目录并返回 JSON。
+/// </summary>
+int FloppyDriveController::GetDirectoryTreeJson(string& outJson)
+{
+	outJson = "[]";
+	if(!pDiskFile) {
+		return 0;
+	}
+
+	FilePositionGuard guard(pDiskFile);
+
+	Fat12Context ctx;
+	if(!LoadFat12Context(pDiskFile, nDiskSize, ctx)) {
+		return 0;
+	}
+
+	vector<uint8_t> fatData;
+	if(!LoadFatTable(pDiskFile, ctx, fatData)) {
+		return 0;
+	}
+
+	vector<uint8_t> rootBuffer;
+	if(ctx.rootEntryCount > 0) {
+		rootBuffer.resize((size_t)ctx.rootEntryCount * 32);
+		if(!ReadBytes(pDiskFile, (long)ctx.rootDirOffset, rootBuffer.data(), rootBuffer.size())) {
+			return 0;
+		}
+	}
+
+	vector<FdcFileNode> children;
+	if(!rootBuffer.empty()) {
+		ParseDirectoryData(pDiskFile, ctx, fatData, rootBuffer.data(), rootBuffer.size(), children);
+	}
+
+	FdcFileNode rootNode;
+	rootNode.type = FdcNodeType::Disk;
+	rootNode.size = (uint32_t)(nDiskSize > 0 ? nDiskSize : 0);
+	rootNode.children = std::move(children);
+
+	string diskName = szDiskName;
+	if(diskName.empty()) {
+		diskName = "Floppy";
+	}
+	size_t pos = diskName.find_last_of("/\\");
+	if(pos != string::npos) {
+		diskName = diskName.substr(pos + 1);
+	}
+	rootNode.name = diskName;
+
+	string json;
+	json.reserve(4096);
+	AppendJson(rootNode, json);
+	outJson = std::move(json);
 	return 1;
 }
 

@@ -148,6 +148,17 @@ namespace Mesen.Interop
 		/// </summary>
 		/// <returns>返回 1 表示活动中，0 表示空闲。</returns>
 		[DllImport(DllPath, EntryPoint = "Floppy_IsActive")] public static extern int FloppyIsActive();
+
+		[DllImport(DllPath, EntryPoint = "Floppy_GetDirectoryTree")] private static extern void FloppyGetDirectoryTreeNative(IntPtr outBuffer, Int32 maxLength);
+		/// <summary>
+		/// 获取当前软盘镜像内的目录树 JSON 字符串。
+		/// </summary>
+		public static string FloppyGetDirectoryTree()
+		{
+			return Utf8Utilities.CallStringApi((IntPtr buffer, Int32 length) => {
+				FloppyGetDirectoryTreeNative(buffer, length);
+			}, 262144);
+		}
 	}
 
 	public struct TimingInfo

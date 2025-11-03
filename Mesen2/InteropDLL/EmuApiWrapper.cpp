@@ -330,6 +330,28 @@ extern "C" {
 	    return 0;
 	}
 
+	// 获取当前软盘镜像的目录树 JSON
+	DllExport void __stdcall Floppy_GetDirectoryTree(char* outBuffer, uint32_t maxLength)
+	{
+		if(!outBuffer || maxLength == 0) {
+			return;
+		}
+		outBuffer[0] = 0;
+		string json = "[]";
+		if(_fdc) {
+			string temp;
+			if(_fdc->GetDirectoryTreeJson(temp)) {
+				json = std::move(temp);
+			}
+		}
+		size_t writable = (size_t)maxLength - 1;
+		size_t copyLength = std::min(writable, json.size());
+		if(copyLength > 0) {
+			memcpy(outBuffer, json.c_str(), copyLength);
+		}
+		outBuffer[copyLength] = 0;
+	}
+
 	class PgoKeyManager : public IKeyManager
 	{
 	public:

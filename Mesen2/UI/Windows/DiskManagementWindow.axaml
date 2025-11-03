@@ -1,10 +1,31 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="Mesen.Windows.DiskManagementWindow"
-        Width="400" Height="200"
-        Title="磁盘管理">
-    <Grid>
-        <!-- 空的对话框，保留最小可见内容 -->
-        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray">(空)</TextBlock>
-    </Grid>
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:vm="using:Mesen.ViewModels"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    x:Class="Mesen.Windows.DiskManagementWindow"
+    Width="420" Height="520"
+    Title="磁盘管理"
+    x:DataType="vm:DiskManagementViewModel">
+    <Design.DataContext>
+        <vm:DiskManagementViewModel />
+    </Design.DataContext>
+
+    <!-- 空的对话框，保留最小可见内容（原始占位注释，仅为记录） -->
+    <DockPanel Margin="8">
+        <Border DockPanel.Dock="Top" Margin="0 0 0 8">
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Button Width="80" Content="刷新" Command="{Binding RefreshCommand}" />
+                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <!-- 数据模板已在全局 Application.DataTemplates 注册 -->
+
+        <Border BorderThickness="1" BorderBrush="{StaticResource MesenGrayBorderColor}">
+            <TreeView ItemsSource="{Binding Items}" HorizontalAlignment="Stretch" />
+        </Border>
+    </DockPanel>
 </Window>

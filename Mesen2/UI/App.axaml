@@ -4,6 +4,7 @@
 	xmlns:dbg="using:Mesen.Debugger"
 	xmlns:l="using:Mesen.Localization"
 	xmlns:u="using:Mesen.Utilities"
+	xmlns:vm="using:Mesen.ViewModels"
 	x:Class="Mesen.App"
 	Name="Mesen"
 >
@@ -46,6 +47,16 @@
 	<Application.DataTemplates>
 		<DataTemplate DataType="x:Enum">
 			<TextBlock Text="{Binding, Converter={StaticResource Enum}}" />
+		</DataTemplate>
+		<!-- 全局注册 DiskDirectoryNode 的 DataTemplate，用于磁盘管理窗口的树形显示 -->
+		<DataTemplate DataType="vm:DiskDirectoryNode">
+			<StackPanel>
+				<StackPanel Orientation="Horizontal" Spacing="12">
+					<TextBlock Text="{Binding Name}" />
+					<TextBlock Text="{Binding SizeText}" Opacity="0.7" />
+				</StackPanel>
+				<ItemsControl ItemsSource="{Binding Children}" Margin="14 2 0 0" />
+			</StackPanel>
 		</DataTemplate>
 	</Application.DataTemplates>
 

@@ -1,4 +1,5 @@
 ﻿#include <stdio.h>
+#include <string>
 
 // 预声明 Emulator，用于发送通知
 class Emulator;
@@ -19,6 +20,10 @@ public:
 	int Eject();
 	// 保存磁盘
 	int SaveDiskImage();
+	/// <summary>
+	/// 获取当前磁盘的目录树 JSON 串，用于 UI 渲染。
+	/// </summary>
+	int GetDirectoryTreeJson(std::string& outJson);
 
 	int IsPresent() { return (pDiskFile != nullptr); }
 	// 返回当前软驱是否处于读/写活动中（1: 活动中, 0: 空闲）
