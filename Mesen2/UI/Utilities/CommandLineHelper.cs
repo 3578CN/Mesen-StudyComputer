@@ -34,8 +34,10 @@ public class CommandLineHelper
 
 	private List<string> _errorMessages = new();
 
-	public CommandLineHelper(string[] args, bool forStartup)
+	public CommandLineHelper(string[]? args, bool forStartup)
 	{
+		// 允许传入 null 参数；若为 null 则使用空数组代替，避免调用方引发空引用警告/异常
+		args ??= Array.Empty<string>();
 		ProcessCommandLineArgs(args, forStartup);
 	}
 

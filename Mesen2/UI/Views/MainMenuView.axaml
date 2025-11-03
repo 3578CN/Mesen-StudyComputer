@@ -37,7 +37,7 @@
 					<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Background="Transparent">
 						<!-- 使用 Border 模拟软驱灯长方形（带细边框与圆角），默认灰色，UI 将根据核心活动更新颜色 -->
 						<!-- 初始 BorderBrush 也设置为灰色，避免在 UI 初始化前出现绿色边框 -->
-						<Border Name="FloppyLed" Width="14" Height="10" VerticalAlignment="Center" Margin="6,0,6,0" Background="#FF8A8A8A" BorderBrush="#FFC0C0C0" BorderThickness="1" CornerRadius="3" />
+						<Border Name="FloppyLed" Width="14" Height="9" VerticalAlignment="Center" Margin="6,0,6,0" Background="#FF8A8A8A" BorderBrush="#FFC0C0C0" BorderThickness="1" CornerRadius="2" />
 						<TextBlock Name="FloppyStatusText" FontWeight="Bold" Text="{Binding FloppyStatus}" Margin="0,0,6,0" />
 					</StackPanel>
 				</Border>
