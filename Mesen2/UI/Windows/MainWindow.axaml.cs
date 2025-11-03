@@ -264,7 +264,13 @@ namespace Mesen.Windows
 			this.FindDescendantOfType<StateGrid>()?.Focus();
 
 			Task.Run(() => {
-				CommandLineHelper cmdLine = new CommandLineHelper(Program.CommandLineArgs, true);
+				// 只在程序启动时允许最多两个参数；若多于两个则截断多余参数
+				string[] startupArgs = Program.CommandLineArgs;
+				if(startupArgs != null && startupArgs.Length > 2) {
+					startupArgs = startupArgs.Take(2).ToArray();
+				}
+
+				CommandLineHelper cmdLine = new CommandLineHelper(startupArgs, true);
 				_cmdLine = cmdLine;
 
 				EmuApi.InitializeEmu(
@@ -276,6 +282,32 @@ namespace Mesen.Windows
 					cmdLine.NoVideo,
 					cmdLine.NoInput
 				);
+
+				// 启动时：如果存在第二个参数并且为软盘镜像(.ima/.img)，则在这里加载该软盘镜像
+				// 并从待载文件列表中移除，避免后续将其当作 ROM 载入。
+				if(startupArgs != null && startupArgs.Length >= 2) {
+					if(cmdLine.FilesToLoad.Count >= 2) {
+						string secondFile = cmdLine.FilesToLoad[1];
+						string ext = Path.GetExtension(secondFile);
+						if(ext.Equals(".ima", StringComparison.OrdinalIgnoreCase) || ext.Equals(".img", StringComparison.OrdinalIgnoreCase)) {
+							try {
+								// 将第二个参数作为软盘镜像载入
+								EmuApi.FloppyLoadDiskImage(secondFile);
+								// 更新 UI 上的软盘状态
+								Dispatcher.UIThread.Post(() => {
+									if(_mainMenu?.DataContext is Mesen.ViewModels.MainMenuViewModel mmvm) {
+										mmvm.SetFloppyStatus(Path.GetFileName(secondFile));
+									}
+								});
+							} catch {
+								// 忽略加载软盘时的异常，避免阻塞启动流程
+							}
+
+							// 从待载列表中移除第二个文件，避免稍后被当作 ROM 载入
+							cmdLine.FilesToLoad.RemoveAt(1);
+						}
+					}
+				}
 
 				ConfigManager.Config.RemoveObsoleteConfig();
 				
