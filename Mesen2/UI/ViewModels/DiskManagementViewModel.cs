@@ -6,6 +6,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Mesen.Interop;
 using ReactiveUI;
+using System.Windows.Input;
 
 namespace Mesen.ViewModels
 {
@@ -54,6 +55,11 @@ namespace Mesen.ViewModels
 		public bool HasChildren => Children.Count > 0;
 
 		/// <summary>
+		/// 当节点为文件时，可在 UI 上绑定的选择命令。
+		/// </summary>
+		public ICommand? SelectCommand { get; set; }
+
+		/// <summary>
 		/// 用于 UI 显示的大小描述。
 		/// </summary>
 		public string SizeText
@@ -79,6 +85,8 @@ namespace Mesen.ViewModels
 		private IReadOnlyList<DiskDirectoryNode> _items = Array.Empty<DiskDirectoryNode>();
 		private string _statusText = "未加载磁盘";
 
+		private DiskDirectoryNode? _selectedNode;
+
 		/// <summary>
 		/// 树视图使用的根节点集合。
 		/// </summary>
@@ -95,6 +103,15 @@ namespace Mesen.ViewModels
 		{
 			get => _statusText;
 			private set => this.RaiseAndSetIfChanged(ref _statusText, value);
+		}
+
+		/// <summary>
+		/// 当前选中的文件节点（通过列表中每项的 SelectCommand 设置）。
+		/// </summary>
+		public DiskDirectoryNode? SelectedNode
+		{
+			get => _selectedNode;
+			set => this.RaiseAndSetIfChanged(ref _selectedNode, value);
 		}
 
 		/// <summary>
@@ -128,7 +145,12 @@ namespace Mesen.ViewModels
 					return;
 				}
 
-				Items = new List<DiskDirectoryNode> { root };
+				// 展示根节点的子项
+				Items = root.Children ?? Array.Empty<DiskDirectoryNode>();
+				// 为文件节点分配选择命令，使其可被单独点击选择
+				foreach(var child in Items) {
+					AssignSelectCommands(child);
+				}
 				StatusText = BuildStatus(root);
 			} catch {
 				Items = Array.Empty<DiskDirectoryNode>();
@@ -199,6 +221,36 @@ namespace Mesen.ViewModels
 				}
 				CountEntries(child, ref files, ref directories);
 			}
+		}
+
+		/// <summary>
+		/// 递归为文件节点分配 SelectCommand，使其可被单独点击选中。
+		/// </summary>
+		private void AssignSelectCommands(DiskDirectoryNode node)
+		{
+			if(node == null) return;
+			if(!node.IsDirectory) {
+				// 文件节点：设置命令以在触发时更新 SelectedNode
+				node.SelectCommand = new RelayCommand(_ => {
+					SelectedNode = node;
+				});
+			} else {
+				foreach(var child in node.Children) {
+					AssignSelectCommands(child);
+				}
+			}
+		}
+
+		/// <summary>
+		/// 简单的 ICommand 实现，用于在节点上绑定执行动作。
+		/// </summary>
+		private class RelayCommand : ICommand
+		{
+			private readonly Action<object?> _execute;
+			public RelayCommand(Action<object?> execute) { _execute = execute ?? throw new ArgumentNullException(nameof(execute)); }
+			public bool CanExecute(object? parameter) => true;
+			public event EventHandler? CanExecuteChanged { add { } remove { } }
+			public void Execute(object? parameter) => _execute(parameter);
 		}
 	}
 }

@@ -13,15 +13,13 @@
         <vm:DiskManagementViewModel />
     </Design.DataContext>
 
-    <!-- 磁盘管理对话框：已移除手动刷新按钮（改为监听磁盘 I/O 通知自动刷新） -->
+    <!-- 磁盘管理对话框：监听磁盘 I/O 通知自动刷新 -->
     <DockPanel Margin="8">
         <Border DockPanel.Dock="Top" Margin="0 0 0 8">
             <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                 <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
             </StackPanel>
         </Border>
-
-        <!-- 数据模板已在全局 Application.DataTemplates 注册 -->
 
         <Border BorderThickness="1" BorderBrush="{StaticResource MesenGrayBorderColor}">
             <TreeView ItemsSource="{Binding Items}" HorizontalAlignment="Stretch" />
