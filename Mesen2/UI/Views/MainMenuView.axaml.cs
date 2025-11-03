@@ -161,7 +161,7 @@ namespace Mesen.Views
 									_floppyOffTimer = null;
 								}
 								_floppyOffTimer = new DispatcherTimer();
-								_floppyOffTimer.Interval = TimeSpan.FromMilliseconds(100);
+								_floppyOffTimer.Interval = TimeSpan.FromMilliseconds(50);
 								_floppyOffTimer.Tick += (s2, t2) => {
 									// 关闭并释放定时器
 									_floppyOffTimer.Stop();
