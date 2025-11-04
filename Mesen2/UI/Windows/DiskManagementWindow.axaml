@@ -64,7 +64,7 @@
             </StackPanel>
         </Border>
 
-        <Border BorderThickness="0 1 0 0" BorderBrush="{StaticResource MesenGrayBorderColor}">
+    <Border x:Name="ListBorder" BorderThickness="0 1 0 0" BorderBrush="{StaticResource MesenGrayBorderColor}">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="0">
                 <!-- 标题行放在 ScrollViewer 内部，使其随列表一起滚动并与行模板对齐 -->
                 <StackPanel>

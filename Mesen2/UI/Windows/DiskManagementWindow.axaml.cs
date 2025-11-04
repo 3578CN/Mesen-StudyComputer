@@ -75,6 +75,13 @@ namespace Mesen.Windows
                 _model = new DiskManagementViewModel();
                 DataContext = _model;
             }
+            // 订阅列表区域的点击事件：点击空白处可以取消选中
+            try {
+                var listBorder = this.FindControl<Border>("ListBorder");
+                if(listBorder != null) {
+                    listBorder.PointerPressed += ListBorder_PointerPressed;
+                }
+            } catch { }
             // 支持拖放文件到窗口以写入镜像
             AddHandler(DragDrop.DropEvent, OnDrop);
             // 支持从列表拖出文件（仅在 Windows 平台启用）
@@ -234,6 +241,27 @@ namespace Mesen.Windows
             _dragSourceControl = null;
             // 确保释放指针捕获，避免释放失败导致后续 Hover/Press 事件异常
             try { e.Pointer.Capture(null); } catch { }
+        }
+
+        /// <summary>
+        /// 列表区域被点击时触发：如果点击目标不是列表项（DiskDirectoryNode），则取消当前选中项。
+        /// 仅响应左键点击。
+        /// </summary>
+        private void ListBorder_PointerPressed(object? sender, PointerPressedEventArgs e)
+        {
+            try {
+                // 仅处理左键点击
+                var pt = e.GetCurrentPoint(this);
+                if(!pt.Properties.IsLeftButtonPressed) return;
+
+                // 如果点击在某个列项上（数据上下文为 DiskDirectoryNode），则不清除选中
+                if(e.Source is Control ctrl && ctrl.DataContext is Mesen.ViewModels.DiskDirectoryNode) {
+                    return;
+                }
+
+                // 否则取消选中
+                if(_model != null) _model.SelectedNode = null;
+            } catch { }
         }
 
         /// <summary>
