@@ -24,7 +24,9 @@
 
         <Border BorderThickness="1" BorderBrush="{StaticResource MesenGrayBorderColor}">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="0">
-                <ItemsControl ItemsSource="{Binding Items}" HorizontalAlignment="Stretch" Width="{Binding Viewport.Width, RelativeSource={RelativeSource AncestorType=ScrollViewer}}" />
+                <!-- 移除对 Viewport.Width 的强制绑定，使 ItemsControl 能根据内容宽度伸展，
+                     并将水平对齐改为 Left，以便当内容宽度大于 ScrollViewer 时出现横向滚动条 -->
+                <ItemsControl ItemsSource="{Binding Items}" HorizontalAlignment="Left" />
             </ScrollViewer>
         </Border>
     </DockPanel>
