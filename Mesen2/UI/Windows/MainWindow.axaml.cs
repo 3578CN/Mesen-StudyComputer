@@ -248,6 +248,12 @@ namespace Mesen.Windows
 
 			_mouseManager = new MouseManager(this, _usesSoftwareRenderer ? _softwareRenderer : _renderer, _mainMenu, _usesSoftwareRenderer);
 
+			// 在 MouseManager 创建后，注册窗口中已有的 ContextMenu（例如 FloppyPanel 的右键菜单），
+			// 以便在渲染区点击时也能由 MouseManager 关闭它们。
+			try {
+				RegisterAllContextMenusWithMouseManager();
+			} catch { }
+
 			ConfigManager.Config.InitializeFontDefaults();
 			ConfigManager.Config.Preferences.ApplyFontOptions();
 			ConfigManager.Config.Debug.Fonts.ApplyConfig();
@@ -341,6 +347,36 @@ namespace Mesen.Windows
 					}
 				});
 			});
+		}
+
+		/// <summary>
+		/// 注册一个由渲染区点击需要关闭的 ContextMenu（由其他视图在初始化时调用）。
+		/// </summary>
+		public void RegisterRendererContextMenu(ContextMenu cm)
+		{
+			_mouseManager?.RegisterContextMenu(cm);
+		}
+
+		/// <summary>
+		/// 注销一个先前注册的 ContextMenu。
+		/// </summary>
+		public void UnregisterRendererContextMenu(ContextMenu cm)
+		{
+			_mouseManager?.UnregisterContextMenu(cm);
+		}
+
+		/// <summary>
+		/// 遍历窗口视觉树并将所有已有的 ContextMenu 注册到 MouseManager（用于启动时一次性注册）。
+		/// </summary>
+		private void RegisterAllContextMenusWithMouseManager()
+		{
+			if(_mouseManager == null) return;
+			try {
+				foreach(var control in this.GetVisualDescendants().OfType<Control>()) {
+					var cm = control.ContextMenu;
+					if(cm != null) _mouseManager.RegisterContextMenu(cm);
+				}
+			} catch { }
 		}
 
 		private void Instance_ArgumentsReceived(object? sender, ArgumentsReceivedEventArgs e)

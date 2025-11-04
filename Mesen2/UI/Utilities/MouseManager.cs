@@ -32,6 +32,10 @@ namespace Mesen.Utilities
 		private MainMenuView _mainMenu;
 		private MainWindow _wnd;
 
+		// 注册需要在渲染区点击时一并关闭的 ContextMenu 集合
+		// 这些通常是 XAML 中定义的控件上下文菜单（例如 FloppyPanel 的 ContextMenu）
+		private HashSet<ContextMenu> _trackedContextMenus = new HashSet<ContextMenu>();
+
 		private int _prevPositionX;
 		private int _prevPositionY;
 		private bool _mouseCaptured = false;
@@ -69,6 +73,14 @@ namespace Mesen.Utilities
 				if(_closeMenuPending && !mouseState.LeftButton) {
 					//Close menu when renderer is clicked, after the mouse button is released (while not in the menu)
 					_mainMenu.MainMenu.Close();
+					// 关闭所有已注册的 ContextMenu（例如 FloppyPanel 的右键菜单）
+					try {
+						foreach(var cm in _trackedContextMenus.ToArray()) {
+							try {
+								if(cm != null && cm.IsOpen) cm.Close();
+							} catch { }
+						}
+					} catch { }
 					if(MainWindowViewModel.Instance.AudioPlayer == null) {
 						//Only give renderer focus when the audio player isn't active
 						//Otherwise clicking on the audio player's buttons does nothing
@@ -281,6 +293,28 @@ namespace Mesen.Utilities
 				timer.Tick -= tmrProcessMouse;
 				timer.Stop();
 			}
+
+			// 清理已注册的 ContextMenu 引用
+			_trackedContextMenus.Clear();
+		}
+
+		/// <summary>
+		/// 注册一个 ContextMenu，使得在渲染区点击时 MouseManager 可以关闭它。
+		/// 中文注释：用于在原生渲染区域（NativeRenderer）点击时也能关闭由控件提供的右键菜单。
+		/// </summary>
+		public void RegisterContextMenu(ContextMenu cm)
+		{
+			if(cm == null) return;
+			_trackedContextMenus.Add(cm);
+		}
+
+		/// <summary>
+		/// 注销先前注册的 ContextMenu。
+		/// </summary>
+		public void UnregisterContextMenu(ContextMenu cm)
+		{
+			if(cm == null) return;
+			_trackedContextMenus.Remove(cm);
 		}
 	}
 }

@@ -52,6 +52,16 @@ namespace Mesen.Views
 			var floppyInner = this.GetControl<StackPanel>("FloppyInner");
 			var floppyContent = this.GetControl<Border>("FloppyContent");
 
+			// 将 FloppyPanel 的 ContextMenu 注册到主窗口的 MouseManager，
+			// 以便在原生渲染区点击时也能关闭该右键菜单（兼容 NativeRenderer 的原生 HWND 场景）。
+			try {
+				var cm = floppyPanel.ContextMenu;
+				if(cm != null) {
+					var wnd = ApplicationHelper.GetMainWindow() as Mesen.Windows.MainWindow;
+					wnd?.RegisterRendererContextMenu(cm);
+				}
+			} catch { }
+
 			// Ensure hover visual even if XAML style is overridden by theme: subscribe to IsPointerOver
 			// 悬停颜色动态计算：亮色主题使用浅蓝（#FFCCE8FF），暗色主题使用浅灰半透明（#66CCCCCC）
 			var normalBrush = Brushes.Transparent;
@@ -102,6 +112,14 @@ namespace Mesen.Views
 					_floppyOffTimer.Stop();
 					_floppyOffTimer = null;
 				}
+				// 从主窗口的 MouseManager 注销 FloppyPanel 的 ContextMenu（若已注册）
+				try {
+					var cm = floppyPanel.ContextMenu;
+					if(cm != null) {
+						var wnd = ApplicationHelper.GetMainWindow() as Mesen.Windows.MainWindow;
+						wnd?.UnregisterRendererContextMenu(cm);
+					}
+				} catch { }
 			};
 
 			floppyPanel.PointerReleased += async (s, e) => {
