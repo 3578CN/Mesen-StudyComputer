@@ -354,7 +354,7 @@ namespace Mesen.ViewModels
 														double actualDlgWidthDip = dlg.FrameSize?.Width ?? dlg.Width;
 														if(double.IsNaN(actualDlgWidthDip) || actualDlgWidthDip <= 0) actualDlgWidthDip = dlgWidthDip;
 														int actualDlgWidthPx = (int)(actualDlgWidthDip * scale);
-														int extraPx = (int)(14 * scale);
+														int extraPx = (int)(12 * scale); // 磁盘管理对话框的边框宽度补偿。
 														dlg.Position = new Avalonia.PixelPoint(controlPosition.X - actualDlgWidthPx + extraPx, controlPosition.Y);
 													} catch {
 														// ignore
