@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 
-namespace Mesen.Windows
+namespace Mesen.Utilities
 {
     /// <summary>
     /// Windows 专用：使用 OLE/COM 启动系统级的文件拖放（支持拖到 Explorer 等外部目标）。

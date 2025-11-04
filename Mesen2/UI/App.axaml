@@ -35,6 +35,8 @@
 			<u:NullTextConverter x:Key="NullTextConverter" />
 			<!-- 缩进转换器：将 Depth 转为左侧 Margin -->
 			<u:DepthToMarginConverter x:Key="DepthToMarginConverter" />
+				<!-- 布尔到画刷转换器：用于选中行的背景高亮 -->
+				<u:BoolToBrushConverter x:Key="BoolToBrushConverter" />
 		
 		<VisualBrush x:Key="ViewerBgBrush" TileMode="Tile" Stretch="None" AlignmentX="Left" AlignmentY="Top" SourceRect="0,0,5,5" DestinationRect="0,0,5,5">
 			<VisualBrush.Visual>
@@ -54,7 +56,7 @@
 			<DataTemplate DataType="vm:DiskDirectoryNode">
 				<StackPanel>
 					<!-- 每行可点击：绑定 SelectCommand（ViewModel 中已为文件节点分配命令） -->
-					<Button Command="{Binding SelectCommand}" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Padding="0" Margin="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" MinHeight="14">
+					<Button Command="{Binding SelectCommand}" Background="{Binding IsSelected, Converter={StaticResource BoolToBrushConverter}}" BorderBrush="Transparent" BorderThickness="0" Padding="0" Margin="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" MinHeight="14">
 						<Grid ColumnDefinitions="120,50,50,80">
 							<!-- 第一列：名称（内部按 Depth 缩进） -->
 							<StackPanel Orientation="Horizontal" Grid.Column="0" Margin="{Binding Depth, Converter={StaticResource DepthToMarginConverter}}" VerticalAlignment="Center">

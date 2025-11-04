@@ -13,7 +13,7 @@ namespace Mesen.ViewModels
 	/// <summary>
 	/// 表示软盘目录树中的单个节点。
 	/// </summary>
-	public class DiskDirectoryNode
+	public class DiskDirectoryNode : ViewModelBase
 	{
 		public DiskDirectoryNode(string name, bool isDirectory, bool isDisk, long size, IReadOnlyList<DiskDirectoryNode> children, long capacity = 0, long freeBytes = 0)
 		{
@@ -95,6 +95,16 @@ namespace Mesen.ViewModels
 		/// </summary>
 		public int Depth { get; set; }
 
+		private bool _isSelected;
+
+		/// <summary>
+		/// 指示节点是否被选中（由 ViewModel 的 SelectedNode 管理）。
+		/// </summary>
+		public bool IsSelected {
+			get => _isSelected;
+			set => this.RaiseAndSetIfChanged(ref _isSelected, value);
+		}
+
 		/// <summary>
 		/// 用于 UI 显示的类型文本（文件/文件夹/磁盘）。
 		/// </summary>
@@ -140,7 +150,13 @@ namespace Mesen.ViewModels
 		public DiskDirectoryNode? SelectedNode
 		{
 			get => _selectedNode;
-			set => this.RaiseAndSetIfChanged(ref _selectedNode, value);
+			set {
+				var previous = _selectedNode;
+				if(previous == value) return;
+				if(previous != null) previous.IsSelected = false;
+				this.RaiseAndSetIfChanged(ref _selectedNode, value);
+				if(_selectedNode != null) _selectedNode.IsSelected = true;
+			}
 		}
 
 		/// <summary>
