@@ -62,6 +62,12 @@ public:
 	 */
 	int DeleteFileByName(const char* filename);
 
+	/**
+	 * 获取当前加载的磁盘镜像路径（UTF-8 编码）。
+	 * 返回指向内部缓冲区的只读 C 字符串，调用者不得释放或修改该指针所指向的数据。
+	 */
+	const char* GetDiskImagePath() const { return szDiskName; }
+
 	// IO: nPort: 0-7
 	unsigned char Read(unsigned char nPort);
 	void Write(unsigned char nPort, unsigned nData);

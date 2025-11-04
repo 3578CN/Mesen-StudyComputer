@@ -160,6 +160,17 @@ namespace Mesen.Interop
 			}, 262144);
 		}
 
+		[DllImport(DllPath, EntryPoint = "Floppy_GetDiskImagePath")] private static extern void FloppyGetDiskImagePathNative(IntPtr outBuffer, Int32 maxLength);
+		/// <summary>
+		/// 获取当前加载的软盘镜像的完整路径（UTF-8）。
+		/// </summary>
+		public static string FloppyGetDiskImagePath()
+		{
+			return Utf8Utilities.CallStringApi((IntPtr buffer, Int32 length) => {
+				FloppyGetDiskImagePathNative(buffer, length);
+			}, 4096);
+		}
+
 		/// <summary>
 		/// 将主机端缓冲区写入当前加载的软盘镜像（目标文件名为 filename，数据由 data 提供）。
 		/// 返回 true 表示成功。

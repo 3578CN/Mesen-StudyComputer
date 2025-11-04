@@ -9,6 +9,7 @@
     mc:Ignorable="d"
     x:Class="Mesen.Windows.DiskManagementWindow"
     Width="420" Height="520"
+    CanResize="False"
     Title="磁盘管理"
     DragDrop.AllowDrop="True"
     x:DataType="vm:DiskManagementViewModel">
@@ -49,13 +50,21 @@
 
     <!-- 磁盘管理对话框：监听磁盘 I/O 通知自动刷新 -->
     <DockPanel Margin="8">
+        <!-- 顶部显示当前加载的磁盘镜像路径（原来顶部的状态信息将被移到列表下方） -->
         <Border DockPanel.Dock="Top" Margin="0 0 0 8">
-            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                <TextBlock Text="{Binding DiskImagePath}" VerticalAlignment="Center" HorizontalAlignment="Stretch" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DiskImagePath}" />
             </StackPanel>
         </Border>
 
-    <Border BorderThickness="0 1 0 0" BorderBrush="{StaticResource MesenGrayBorderColor}">
+        <!-- 将状态条移动到列表下方（先放置以便后面的主内容作为最后一项填充中心区域） -->
+        <Border DockPanel.Dock="Bottom" Margin="0 8 0 0">
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" HorizontalAlignment="Left">
+                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            </StackPanel>
+        </Border>
+
+        <Border BorderThickness="0 1 0 0" BorderBrush="{StaticResource MesenGrayBorderColor}">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="0">
                 <!-- 标题行放在 ScrollViewer 内部，使其随列表一起滚动并与行模板对齐 -->
                 <StackPanel>

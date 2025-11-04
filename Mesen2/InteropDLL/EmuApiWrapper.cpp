@@ -452,3 +452,18 @@ FloppyDriveController* InteropGetFdc()
 {
 	return _fdc.get();
 }
+
+// 获取当前加载的软盘镜像路径（完整路径，UTF-8）。
+DllExport void __stdcall Floppy_GetDiskImagePath(char* outBuffer, uint32_t maxLength)
+{
+	if(!outBuffer || maxLength == 0) return;
+	outBuffer[0] = 0;
+	string path;
+	if(_fdc) {
+		path = string(_fdc->GetDiskImagePath());
+	}
+	size_t writable = (size_t)maxLength - 1;
+	size_t copyLength = std::min(writable, path.size());
+	if(copyLength > 0) memcpy(outBuffer, path.c_str(), copyLength);
+	outBuffer[copyLength] = 0;
+}

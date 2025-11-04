@@ -144,6 +144,13 @@ namespace Mesen.ViewModels
 			private set => this.RaiseAndSetIfChanged(ref _statusText, value);
 		}
 
+		// 磁盘镜像完整路径（由原生互操作层提供），用于在窗口顶部显示当前加载的镜像
+		private string _diskImagePath = string.Empty;
+		public string DiskImagePath {
+			get => _diskImagePath;
+			private set => this.RaiseAndSetIfChanged(ref _diskImagePath, value);
+		}
+
 		// 可调整的列宽属性（单位：DIP），用于在 UI 中绑定并通过 GridSplitter 调整
 		private double _columnNameWidth = 200.0;
 		private double _columnModifiedWidth = 120.0;
@@ -223,6 +230,7 @@ namespace Mesen.ViewModels
 				if(string.IsNullOrWhiteSpace(json)) {
 					Items = Array.Empty<DiskDirectoryNode>();
 					StatusText = "未加载磁盘";
+					DiskImagePath = string.Empty;
 					return;
 				}
 
@@ -230,6 +238,7 @@ namespace Mesen.ViewModels
 				if(root == null) {
 					Items = Array.Empty<DiskDirectoryNode>();
 					StatusText = "未加载磁盘";
+					DiskImagePath = string.Empty;
 					return;
 				}
 
@@ -240,9 +249,16 @@ namespace Mesen.ViewModels
 					AssignSelectCommands(child);
 				}
 				StatusText = BuildStatus(root);
+				// 更新当前加载的磁盘镜像路径（由原生层提供）
+				try {
+					DiskImagePath = EmuApi.FloppyGetDiskImagePath() ?? string.Empty;
+				} catch {
+					DiskImagePath = string.Empty;
+				}
 			} catch {
 				Items = Array.Empty<DiskDirectoryNode>();
 				StatusText = "读取磁盘目录失败";
+				DiskImagePath = string.Empty;
 			}
 		}
 
