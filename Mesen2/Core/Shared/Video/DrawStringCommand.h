@@ -1,6 +1,10 @@
-#pragma once
+﻿#pragma once
 #include "pch.h"
 #include "Shared/Video/DrawCommand.h"
+#ifdef _WIN32
+#include "Shared/Video/WindowsTrueTypeFont.h"
+#include <limits>
+#endif
 
 class DrawStringCommand : public DrawCommand
 {
@@ -131,6 +135,169 @@ private:
 protected:
 	void InternalDraw()
 	{
+#ifdef _WIN32
+		int baseScale = (int)std::floor(_xScale);
+		if(baseScale == 0) {
+			baseScale = 1;
+		}
+		int startX = (int)(_x * _xScale / baseScale);
+		int currentX = startX;
+		int currentY = _y;
+
+		WindowsTrueTypeFont& font = WindowsTrueTypeFont::GetInstance();
+		font.EnsureReady();
+
+		const int lineHeight = std::max(1, font.GetLineHeight());
+		const int baselineOffset = font.GetBaselineOffset();
+		int baseline = currentY + baselineOffset;
+		int lineTop = baseline - baselineOffset;
+
+		const int wrapWidth = _maxWidth > 0 ? _maxWidth : std::numeric_limits<int>::max();
+		const int spaceAdvance = std::max(1, font.GetSpaceAdvance());
+		const int tabAdvance = std::max(1, spaceAdvance * _tabSpace);
+
+		const uint32_t fgRGB = _color & 0x00FFFFFF;
+		const uint32_t fgAlpha = (_color >> 24) & 0xFF;
+		const uint32_t bgAlpha = (_backColor >> 24) & 0xFF;
+		const bool drawBackground = bgAlpha > 0;
+
+		size_t index = 0;
+		auto readCodepoint = [&](uint32_t& cp) -> bool {
+			if(index >= _text.size()) {
+				return false;
+			}
+			uint8_t lead = (uint8_t)_text[index++];
+			if(lead < 0x80) {
+				cp = lead;
+				return true;
+			}
+
+			if((lead & 0xE0) == 0xC0 && index < _text.size()) {
+				uint8_t b1 = (uint8_t)_text[index++];
+				if((b1 & 0xC0) != 0x80) {
+					cp = '?';
+					return true;
+				}
+				cp = ((lead & 0x1F) << 6) | (b1 & 0x3F);
+				return true;
+			}
+
+			if((lead & 0xF0) == 0xE0 && index + 1 < _text.size()) {
+				uint8_t b1 = (uint8_t)_text[index++];
+				uint8_t b2 = (uint8_t)_text[index++];
+				if(((b1 & 0xC0) != 0x80) || ((b2 & 0xC0) != 0x80)) {
+					cp = '?';
+					return true;
+				}
+				cp = ((lead & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F);
+				return true;
+			}
+
+			if((lead & 0xF8) == 0xF0 && index + 2 < _text.size()) {
+				uint8_t b1 = (uint8_t)_text[index++];
+				uint8_t b2 = (uint8_t)_text[index++];
+				uint8_t b3 = (uint8_t)_text[index++];
+				if(((b1 & 0xC0) != 0x80) || ((b2 & 0xC0) != 0x80) || ((b3 & 0xC0) != 0x80)) {
+					cp = '?';
+					return true;
+				}
+				cp = ((lead & 0x07) << 18) | ((b1 & 0x3F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F);
+				return true;
+			}
+
+			cp = '?';
+			return true;
+		};
+
+		auto newLine = [&]() {
+			currentX = startX;
+			currentY += lineHeight;
+			baseline = currentY + baselineOffset;
+			lineTop = baseline - baselineOffset;
+		};
+
+		uint32_t codepoint = 0;
+		while(readCodepoint(codepoint)) {
+			if(codepoint == '\r') {
+				continue;
+			}
+			if(codepoint == '\n') {
+				newLine();
+				continue;
+			}
+			if(codepoint == '\t') {
+				int relative = currentX - startX;
+				int advance = tabAdvance;
+				if(relative > 0) {
+					int remainder = relative % tabAdvance;
+					advance = remainder == 0 ? tabAdvance : tabAdvance - remainder;
+				}
+				if(relative > 0 && relative + advance > wrapWidth) {
+					newLine();
+					relative = 0;
+					advance = tabAdvance;
+				}
+				if(drawBackground) {
+					for(int row = 0; row < lineHeight; row++) {
+						for(int column = 0; column < advance; column++) {
+							DrawPixel(currentX + column, lineTop + row, _backColor);
+						}
+					}
+				}
+				currentX += advance;
+				continue;
+			}
+
+			if(codepoint == ' ' && _maxWidth > 0 && currentX == startX) {
+				continue;
+			}
+
+			const WindowsTrueTypeFont::GlyphBitmap& glyph = font.GetGlyph(codepoint);
+			int relative = currentX - startX;
+			if(relative > 0 && relative + glyph.Advance > wrapWidth) {
+				newLine();
+			}
+
+			int drawX = currentX + glyph.OffsetX;
+			int drawY = baseline + glyph.OffsetY;
+
+			if(drawBackground) {
+				if(glyph.Width > 0 && glyph.Height > 0) {
+					for(int row = 0; row < glyph.Height; row++) {
+						for(int column = 0; column < glyph.Width; column++) {
+							DrawPixel(drawX + column, drawY + row, _backColor);
+						}
+					}
+				} else {
+					int bgWidth = std::max(spaceAdvance, glyph.Advance);
+					for(int row = 0; row < lineHeight; row++) {
+						for(int column = 0; column < bgWidth; column++) {
+							DrawPixel(currentX + column, lineTop + row, _backColor);
+						}
+					}
+				}
+			}
+
+			if(glyph.Width > 0 && glyph.Height > 0 && !glyph.Pixels.empty()) {
+				for(int row = 0; row < glyph.Height; row++) {
+					for(int column = 0; column < glyph.Width; column++) {
+						uint8_t coverage = glyph.Pixels[static_cast<size_t>(row) * glyph.Width + column];
+						if(coverage == 0) {
+							continue;
+						}
+						uint32_t alpha = (fgAlpha * coverage + 127) / 255;
+						if(alpha == 0) {
+							continue;
+						}
+						uint32_t pixelColor = fgRGB | (alpha << 24);
+						DrawPixel(drawX + column, drawY + row, pixelColor);
+					}
+				}
+			}
+
+			currentX += glyph.Advance;
+		}
+#else
 		int startX = (int)(_x * _xScale / std::floor(_xScale));
 		int lineWidth = 0;
 		int x = startX;
@@ -224,6 +391,7 @@ protected:
 				x += width;
 			}
 		}
+#endif
 	}
 
 public:
@@ -238,6 +406,121 @@ public:
 
 	static TextSize MeasureString(string& text, uint32_t maxWidth = 0)
 	{
+#ifdef _WIN32
+		WindowsTrueTypeFont& font = WindowsTrueTypeFont::GetInstance();
+		font.EnsureReady();
+
+		const int lineHeight = std::max(1, font.GetLineHeight());
+		const int spaceAdvance = std::max(1, font.GetSpaceAdvance());
+		const int tabAdvance = std::max(1, spaceAdvance * _tabSpace);
+		const bool hasWrap = maxWidth > 0;
+		const int wrapWidth = hasWrap ? (int)maxWidth : std::numeric_limits<int>::max();
+
+		int x = 0;
+		int maxX = 0;
+		int y = 0;
+
+		size_t index = 0;
+		auto readCodepoint = [&](uint32_t& cp) -> bool {
+			if(index >= text.size()) {
+				return false;
+			}
+			uint8_t lead = (uint8_t)text[index++];
+			if(lead < 0x80) {
+				cp = lead;
+				return true;
+			}
+
+			if((lead & 0xE0) == 0xC0 && index < text.size()) {
+				uint8_t b1 = (uint8_t)text[index++];
+				if((b1 & 0xC0) != 0x80) {
+					cp = '?';
+					return true;
+				}
+				cp = ((lead & 0x1F) << 6) | (b1 & 0x3F);
+				return true;
+			}
+
+			if((lead & 0xF0) == 0xE0 && index + 1 < text.size()) {
+				uint8_t b1 = (uint8_t)text[index++];
+				uint8_t b2 = (uint8_t)text[index++];
+				if(((b1 & 0xC0) != 0x80) || ((b2 & 0xC0) != 0x80)) {
+					cp = '?';
+					return true;
+				}
+				cp = ((lead & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F);
+				return true;
+			}
+
+			if((lead & 0xF8) == 0xF0 && index + 2 < text.size()) {
+				uint8_t b1 = (uint8_t)text[index++];
+				uint8_t b2 = (uint8_t)text[index++];
+				uint8_t b3 = (uint8_t)text[index++];
+				if(((b1 & 0xC0) != 0x80) || ((b2 & 0xC0) != 0x80) || ((b3 & 0xC0) != 0x80)) {
+					cp = '?';
+					return true;
+				}
+				cp = ((lead & 0x07) << 18) | ((b1 & 0x3F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F);
+				return true;
+			}
+
+			cp = '?';
+			return true;
+		};
+
+		auto newLine = [&]() {
+			maxX = std::max(maxX, x);
+			x = 0;
+			y += lineHeight;
+		};
+
+		uint32_t codepoint = 0;
+		while(readCodepoint(codepoint)) {
+			if(codepoint == '\r') {
+				continue;
+			}
+			if(codepoint == '\n') {
+				newLine();
+				continue;
+			}
+			if(codepoint == '\t') {
+				int advance = tabAdvance;
+				if(x > 0) {
+					int remainder = x % tabAdvance;
+					advance = remainder == 0 ? tabAdvance : tabAdvance - remainder;
+				}
+				if(hasWrap && x > 0 && x + advance > wrapWidth) {
+					newLine();
+					advance = tabAdvance;
+				}
+				x += advance;
+				maxX = std::max(maxX, x);
+				continue;
+			}
+			if(codepoint == ' ' && hasWrap && x == 0) {
+				continue;
+			}
+
+			const WindowsTrueTypeFont::GlyphBitmap& glyph = font.GetGlyph(codepoint);
+			if(hasWrap && x > 0 && x + glyph.Advance > wrapWidth) {
+				newLine();
+			}
+
+			int glyphBounds = glyph.OffsetX + glyph.Width;
+			glyphBounds = std::max(glyphBounds, glyph.Advance);
+			glyphBounds = std::max(glyphBounds, 0);
+			maxX = std::max(maxX, x + glyphBounds);
+
+			x += glyph.Advance;
+		}
+
+		maxX = std::max(maxX, x);
+
+		TextSize size;
+		size.X = (uint32_t)maxX;
+		size.Y = (uint32_t)(y + lineHeight);
+		return size;
+#else
 		uint32_t maxX = 0;
 		uint32_t x = 0;
 		uint32_t y = 0;
@@ -297,5 +580,6 @@ public:
 		size.X = std::max(x, maxX);
 		size.Y = y + lineHeight;
 		return size;
+#endif
 	}
 };
