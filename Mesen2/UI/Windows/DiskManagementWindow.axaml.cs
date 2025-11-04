@@ -149,6 +149,10 @@ namespace Mesen.Windows
                     _dragStartPos = e.GetPosition(this);
                     _dragNode = node;
                     _dragSourceControl = ctrl;
+                    // 直接同步选中项，避免拖动前还保留旧文件导致 UI 状态与拖动的节点不一致
+                    if(_model != null) {
+                        _model.SelectedNode = node;
+                    }
                 }
             } catch { }
         }
@@ -165,6 +169,12 @@ namespace Mesen.Windows
                     // 达到拖动阈值，开始拖放（仅限 Windows）
                     var node = _dragNode;
                     var src = _dragSourceControl;
+                    // 释放可能存在的指针捕获，避免拖放后指针事件仍然锁定在旧的按钮上
+                    try {
+                        if(e.Pointer.Captured != null) {
+                            e.Pointer.Capture(null);
+                        }
+                    } catch { }
                     _dragStartPos = null;
                     _dragNode = null;
                     _dragSourceControl = null;
@@ -179,6 +189,8 @@ namespace Mesen.Windows
             _dragStartPos = null;
             _dragNode = null;
             _dragSourceControl = null;
+            // 确保释放指针捕获，避免释放失败导致后续 Hover/Press 事件异常
+            try { e.Pointer.Capture(null); } catch { }
         }
 
         /// <summary>
