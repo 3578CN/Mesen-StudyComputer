@@ -179,7 +179,7 @@ namespace Mesen.Windows
             _dragSourceControl = null;
         }
 
-    private async void StartDragForNode(Mesen.ViewModels.DiskDirectoryNode node, Control? source)
+    private void StartDragForNode(Mesen.ViewModels.DiskDirectoryNode node, Control? source)
         {
             try {
                 // 仅支持 Windows 平台的外部拖放
@@ -193,24 +193,24 @@ namespace Mesen.Windows
                     return;
                 }
 
+                // 使用原始文件名写入临时目录，避免临时文件名中包含 GUID 前缀导致目标处显示为随机名。
                 string safeName = Path.GetFileName(node.Name);
                 if(string.IsNullOrEmpty(safeName)) safeName = "file.bin";
-                string tmpPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + "_" + safeName);
-                File.WriteAllBytes(tmpPath, data);
-
+                string tmpDir = Path.Combine(Path.GetTempPath(), "Mesen_Drag", Guid.NewGuid().ToString());
                 try {
-                    // 直接复制到桌面（仅限 Windows）：因为直接发起系统级拖放在当前平台/引用下存在重载歧义，
-                    // 为保证功能可用，这里实现为拖动手势触发时将文件写入用户桌面目录以完成“拖出复制到桌面”的效果。
-                    string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-                    string dest = Path.Combine(desktop, safeName);
-                    // 若目标已存在则生成唯一名称
-                    if(File.Exists(dest)) {
-                        dest = Path.Combine(desktop, Guid.NewGuid().ToString() + "_" + safeName);
+                    Directory.CreateDirectory(tmpDir);
+                    string tmpPath = Path.Combine(tmpDir, safeName);
+                    File.WriteAllBytes(tmpPath, data);
+
+                    // 使用 Windows OLE 启动系统级拖放，使得外部目标（如资源管理器）能够接收文件并在鼠标释放时完成复制。
+                    // DoDragDropFiles 将在拖放结束（放下或取消）后返回，因此可在返回后删除整个临时目录，保证临时文件在拖放期间可用并且目标文件名为原始名。
+                    bool started = Win32DragDrop.DoDragDropFiles(new[] { tmpPath });
+                    if(!started) {
+                        DisplayMessageHelper.DisplayMessage("Info", "拖放未成功启动或被取消。");
                     }
-                    File.Copy(tmpPath, dest);
-                    DisplayMessageHelper.DisplayMessage("Info", "已复制到桌面: " + dest);
                 } finally {
-                    try { File.Delete(tmpPath); } catch { }
+                    // 尝试删除临时目录（可能因目标移动文件或锁定而失败），忽略异常
+                    try { Directory.Delete(tmpDir, true); } catch { }
                 }
             } catch(Exception ex) {
                 DisplayMessageHelper.DisplayMessage("Error", ex.Message);
