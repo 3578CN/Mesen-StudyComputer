@@ -105,6 +105,8 @@ struct FdcFileNode
 	uint32_t capacity = 0;
 	// 可用空间（字节）
 	uint32_t freeBytes = 0;
+	// 修改时间的字符串表示，如果可用格式为 "YYYY-MM-DD HH:MM:SS"
+	string modified;
 };
 
 static bool ReadBytes(FILE* file, long offset, void* buffer, size_t length)
@@ -366,6 +368,23 @@ static void ParseDirectoryData(FILE* file, const Fat12Context& ctx, const vector
 		node.type = isDirectory ? FdcNodeType::Directory : FdcNodeType::File;
 		node.name = name;
 		node.size = fileSize;
+			// 解析目录项中的修改时间（写入时间）。FAT 目录项的写入时间位于偏移 22-25。
+			// 时间：entry[22..23]，日期：entry[24..25]
+			{
+				uint16_t writeTime = (uint16_t)(entry[22] | (entry[23] << 8));
+				uint16_t writeDate = (uint16_t)(entry[24] | (entry[25] << 8));
+				if(writeDate != 0 || writeTime != 0) {
+					int hour = (writeTime >> 11) & 0x1F;
+					int minute = (writeTime >> 5) & 0x3F;
+					int second = (writeTime & 0x1F) * 2;
+					int day = writeDate & 0x1F;
+					int month = (writeDate >> 5) & 0x0F;
+					int year = ((writeDate >> 9) & 0x7F) + 1980;
+					char buf[32];
+					snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minute, second);
+					node.modified = buf;
+				}
+			}
 		// 记录首簇，供后续读取文件数据使用
 		node.firstCluster = firstCluster;
 
@@ -435,6 +454,12 @@ static void AppendJson(const FdcFileNode& node, string& builder)
 	builder += "\"";
 	builder += ",\"size\":";
 	builder += std::to_string(node.size);
+	// 如果存在修改时间，则以字符串形式输出（YYYY-MM-DD HH:MM:SS）
+	if(!node.modified.empty()) {
+		builder += ",\"modified\":\"";
+		JsonEscape(node.modified, builder);
+		builder += "\"";
+	}
 	if(node.type == FdcNodeType::Disk) {
 		builder += ",\"capacity\":";
 		builder += std::to_string(node.capacity);

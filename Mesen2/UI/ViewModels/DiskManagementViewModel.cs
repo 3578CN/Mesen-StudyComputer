@@ -145,9 +145,9 @@ namespace Mesen.ViewModels
 		}
 
 		// 可调整的列宽属性（单位：DIP），用于在 UI 中绑定并通过 GridSplitter 调整
-		private double _columnNameWidth = 160.0;
+		private double _columnNameWidth = 200.0;
 		private double _columnModifiedWidth = 120.0;
-		private double _columnSizeWidth = 60.0;
+		private double _columnSizeWidth = 70.0;
 
 		/// <summary>
 		/// 名称列宽（可调整）。
