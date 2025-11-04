@@ -37,7 +37,7 @@
                             <ColumnDefinition Width="{Binding ColumnSizeWidth, RelativeSource={RelativeSource AncestorType=win:DiskManagementWindow}, Mode=TwoWay, Converter={StaticResource GridLengthConverter}}" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="{Binding Depth, Converter={StaticResource DepthToMarginConverter}}" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" Opacity="0.8" />
                         </StackPanel>
                         <TextBlock Grid.Column="2" Text="{Binding ModifiedText}" VerticalAlignment="Center" Opacity="0.8" />
                         <TextBlock Grid.Column="4" Text="{Binding SizeText}" VerticalAlignment="Center" HorizontalAlignment="Right" Opacity="0.8" />
@@ -78,7 +78,7 @@
                                 <ColumnDefinition Width="{Binding ColumnSizeWidth, RelativeSource={RelativeSource AncestorType=win:DiskManagementWindow}, Mode=TwoWay, Converter={StaticResource GridLengthConverter}}" />
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0" Text="名称" VerticalAlignment="Center" FontWeight="SemiBold" />
+                        <TextBlock Grid.Column="0" Text="名称" VerticalAlignment="Center" Opacity="0.8" />
 
                         <!-- 第一条可拖动分隔线：视觉为 1px，交互区为 6 DIP -->
                         <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="Transparent" Cursor="SizeWestEast" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
