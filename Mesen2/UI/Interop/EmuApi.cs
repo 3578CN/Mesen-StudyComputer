@@ -177,6 +177,32 @@ namespace Mesen.Interop
 				return false;
 			}
 		}
+
+		[DllImport(DllPath, EntryPoint = "Floppy_GetFileSize")]
+		private static extern int FloppyGetFileSizeNative([MarshalAs(UnmanagedType.LPStr)] string filename);
+
+		[DllImport(DllPath, EntryPoint = "Floppy_ReadFile")]
+		private static extern int FloppyReadFileNative([MarshalAs(UnmanagedType.LPStr)] string filename, [Out] byte[] outBuffer, UInt32 maxLength);
+
+		/// <summary>
+		/// 从当前加载的软盘镜像读取指定文件的字节内容（托管封装）。
+		/// 若失败或文件不存在返回 null。
+		/// </summary>
+		public static byte[]? FloppyReadFile(string filename)
+		{
+			if(string.IsNullOrEmpty(filename)) return null;
+			try {
+				int size = FloppyGetFileSizeNative(filename);
+				if(size <= 0) return null;
+				byte[] buffer = new byte[size];
+				int read = FloppyReadFileNative(filename, buffer, (uint)buffer.Length);
+				if(read <= 0) return null;
+				if(read != buffer.Length) Array.Resize(ref buffer, read);
+				return buffer;
+			} catch {
+				return null;
+			}
+		}
 	}
 
 	public struct TimingInfo

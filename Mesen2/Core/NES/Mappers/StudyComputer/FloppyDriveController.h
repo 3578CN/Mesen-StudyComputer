@@ -38,6 +38,22 @@ public:
 	 */
 	int AddFileFromBuffer(const char* filename, const unsigned char* data, unsigned int length);
 
+	/**
+	 * 获取镜像中指定文件的大小（字节）。
+	 * @param filename 文件名（支持与 JSON 中一致的长/短文件名匹配）。
+	 * @return 返回文件大小（字节），未找到或出错返回 0。
+	 */
+	int GetFileSize(const char* filename);
+
+	/**
+	 * 从镜像中读取指定文件到提供的缓冲区。
+	 * @param filename 要读取的文件名（支持与 GetFileSize 相同的匹配规则）。
+	 * @param outBuffer 输出缓冲区指针（由调用方分配）。
+	 * @param maxLength 输出缓冲区最大可写长度。
+	 * @return 成功返回实际读取字节数；失败或未找到返回 0。
+	 */
+	int ReadFileToBuffer(const char* filename, unsigned char* outBuffer, uint32_t maxLength);
+
 	// IO: nPort: 0-7
 	unsigned char Read(unsigned char nPort);
 	void Write(unsigned char nPort, unsigned nData);

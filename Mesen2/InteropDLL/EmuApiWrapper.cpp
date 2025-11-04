@@ -360,6 +360,22 @@ extern "C" {
 		return _fdc->AddFileFromBuffer(filename, data, length);
 	}
 
+	// 获取镜像内指定文件的大小（字节），用于托管侧分配缓冲区
+	DllExport int __stdcall Floppy_GetFileSize(char* filename)
+	{
+		if(!_fdc) return 0;
+		if(!filename) return 0;
+		return _fdc->GetFileSize(filename);
+	}
+
+	// 从镜像中读取指定文件到 caller 提供的缓冲区
+	DllExport int __stdcall Floppy_ReadFile(char* filename, uint8_t* outBuffer, uint32_t maxLength)
+	{
+		if(!_fdc) return 0;
+		if(!filename || !outBuffer || maxLength == 0) return 0;
+		return _fdc->ReadFileToBuffer(filename, outBuffer, maxLength);
+	}
+
 	class PgoKeyManager : public IKeyManager
 	{
 	public:

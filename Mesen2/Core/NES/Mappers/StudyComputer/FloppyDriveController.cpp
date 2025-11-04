@@ -99,6 +99,8 @@ struct FdcFileNode
 	string name;
 	uint32_t size = 0;
 	vector<FdcFileNode> children;
+	// 首簇编号（用于读取文件内容），仅对文件/目录项有意义
+	uint16_t firstCluster = 0;
 	// 总容量（数据区可用字节数），仅对磁盘类型有意义
 	uint32_t capacity = 0;
 	// 可用空间（字节）
@@ -364,6 +366,8 @@ static void ParseDirectoryData(FILE* file, const Fat12Context& ctx, const vector
 		node.type = isDirectory ? FdcNodeType::Directory : FdcNodeType::File;
 		node.name = name;
 		node.size = fileSize;
+		// 记录首簇，供后续读取文件数据使用
+		node.firstCluster = firstCluster;
 
 		if(isDirectory && firstCluster >= 2) {
 			vector<uint8_t> dirData;
@@ -374,6 +378,22 @@ static void ParseDirectoryData(FILE* file, const Fat12Context& ctx, const vector
 
 		output.push_back(std::move(node));
 	}
+}
+
+// 在节点树中查找指定名称的文件，若找到返回 true 并填充首簇与大小
+static bool FindFileNodeByName(const vector<FdcFileNode>& nodes, const string& filename, uint16_t& outFirstCluster, uint32_t& outSize)
+{
+	for(const auto& n : nodes) {
+		if(n.type == FdcNodeType::File && n.name == filename) {
+			outFirstCluster = n.firstCluster;
+			outSize = n.size;
+			return true;
+		}
+		if(!n.children.empty()) {
+			if(FindFileNodeByName(n.children, filename, outFirstCluster, outSize)) return true;
+		}
+	}
+	return false;
 }
 
 static void JsonEscape(const string& text, string& builder)
@@ -1496,4 +1516,83 @@ int FloppyDriveController::AddFileFromBuffer(const char* filename, const unsigne
 	::fflush(pDiskFile);
 
 	return 1;
+}
+
+/**
+ * 获取镜像中指定文件的大小（字节）。
+ * @param filename 文件名（支持长/短文件名，与 JSON 中名称一致）。
+ * @return 返回文件大小（字节），未找到或发生错误返回 0。
+ */
+int FloppyDriveController::GetFileSize(const char* filename)
+{
+	if(!pDiskFile || !filename) return 0;
+
+	FilePositionGuard guard(pDiskFile);
+
+	Fat12Context ctx;
+	if(!LoadFat12Context(pDiskFile, nDiskSize, ctx)) return 0;
+
+	vector<uint8_t> fatData;
+	if(!LoadFatTable(pDiskFile, ctx, fatData)) return 0;
+
+	if(ctx.rootEntryCount == 0) return 0;
+	vector<uint8_t> rootBuffer((size_t)ctx.rootEntryCount * 32);
+	if(!ReadBytes(pDiskFile, (long)ctx.rootDirOffset, rootBuffer.data(), rootBuffer.size())) return 0;
+
+	vector<FdcFileNode> children;
+	ParseDirectoryData(pDiskFile, ctx, fatData, rootBuffer.data(), rootBuffer.size(), children);
+
+	uint16_t firstCluster = 0;
+	uint32_t size = 0;
+	if(FindFileNodeByName(children, filename, firstCluster, size)) {
+		return (int)size;
+	}
+	return 0;
+}
+
+/**
+ * 从镜像中读取指定文件的数据到调用方缓冲区。
+ * @param filename 要读取的文件名（与 GetFileSize 相同的匹配规则）。
+ * @param outBuffer 输出缓冲区指针。
+ * @param maxLength 输出缓冲区最大长度。
+ * @return 返回实际写入的字节数，失败或未找到返回 0。
+ */
+int FloppyDriveController::ReadFileToBuffer(const char* filename, unsigned char* outBuffer, uint32_t maxLength)
+{
+	if(!pDiskFile || !filename || !outBuffer || maxLength == 0) return 0;
+
+	FilePositionGuard guard(pDiskFile);
+
+	Fat12Context ctx;
+	if(!LoadFat12Context(pDiskFile, nDiskSize, ctx)) return 0;
+
+	vector<uint8_t> fatData;
+	if(!LoadFatTable(pDiskFile, ctx, fatData)) return 0;
+
+	if(ctx.rootEntryCount == 0) return 0;
+	vector<uint8_t> rootBuffer((size_t)ctx.rootEntryCount * 32);
+	if(!ReadBytes(pDiskFile, (long)ctx.rootDirOffset, rootBuffer.data(), rootBuffer.size())) return 0;
+
+	vector<FdcFileNode> children;
+	ParseDirectoryData(pDiskFile, ctx, fatData, rootBuffer.data(), rootBuffer.size(), children);
+
+	uint16_t firstCluster = 0;
+	uint32_t size = 0;
+	if(!FindFileNodeByName(children, filename, firstCluster, size)) return 0;
+
+	vector<uint8_t> fileData;
+	if(firstCluster >= 2) {
+		if(!ReadClusterChain(pDiskFile, ctx, fatData, firstCluster, fileData)) return 0;
+	}
+
+	uint32_t toCopy = size <= maxLength ? (uint32_t)size : maxLength;
+	if(toCopy > 0) {
+		if(fileData.size() < toCopy) {
+			// 数据不完整，仅拷贝可用部分
+			toCopy = (uint32_t)fileData.size();
+		}
+		if(toCopy > 0) memcpy(outBuffer, fileData.data(), toCopy);
+	}
+
+	return (int)toCopy;
 }
