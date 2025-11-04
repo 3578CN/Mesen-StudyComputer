@@ -448,13 +448,14 @@ DllExport int __stdcall Floppy_DeleteFile(char* filename)
 }
 
 // Interop accessor used by other modules to obtain the global wrapper-managed FDC instance.
+// Interop accessor used by other modules to obtain the global wrapper-managed FDC instance.
 FloppyDriveController* InteropGetFdc()
 {
 	return _fdc.get();
 }
 
 // 获取当前加载的软盘镜像路径（完整路径，UTF-8）。
-DllExport void __stdcall Floppy_GetDiskImagePath(char* outBuffer, uint32_t maxLength)
+extern "C" DllExport void __stdcall Floppy_GetDiskImagePath(char* outBuffer, uint32_t maxLength)
 {
 	if(!outBuffer || maxLength == 0) return;
 	outBuffer[0] = 0;
