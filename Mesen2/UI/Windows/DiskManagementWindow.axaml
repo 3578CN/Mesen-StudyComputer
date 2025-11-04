@@ -32,15 +32,15 @@
                             <ColumnDefinition Width="{Binding ColumnNameWidth, RelativeSource={RelativeSource AncestorType=win:DiskManagementWindow}, Mode=TwoWay, Converter={StaticResource GridLengthConverter}}" />
                             <!-- 保留较宽的交互区域（6 DIP）以便拖拽，但实际可见线为 1px -->
                             <ColumnDefinition Width="6" />
-                            <ColumnDefinition Width="{Binding ColumnModifiedWidth, RelativeSource={RelativeSource AncestorType=win:DiskManagementWindow}, Mode=TwoWay, Converter={StaticResource GridLengthConverter}}" />
-                            <ColumnDefinition Width="6" />
                             <ColumnDefinition Width="{Binding ColumnSizeWidth, RelativeSource={RelativeSource AncestorType=win:DiskManagementWindow}, Mode=TwoWay, Converter={StaticResource GridLengthConverter}}" />
+                            <ColumnDefinition Width="6" />
+                            <ColumnDefinition Width="{Binding ColumnModifiedWidth, RelativeSource={RelativeSource AncestorType=win:DiskManagementWindow}, Mode=TwoWay, Converter={StaticResource GridLengthConverter}}" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="{Binding Depth, Converter={StaticResource DepthToMarginConverter}}" VerticalAlignment="Center">
                             <TextBlock Text="{Binding Name}" VerticalAlignment="Center" Opacity="0.8" />
                         </StackPanel>
-                        <TextBlock Grid.Column="2" Text="{Binding ModifiedText}" VerticalAlignment="Center" Opacity="0.8" />
-                        <TextBlock Grid.Column="4" Text="{Binding SizeText}" VerticalAlignment="Center" HorizontalAlignment="Right" Opacity="0.8" />
+                        <TextBlock Grid.Column="2" Text="{Binding SizeText}" VerticalAlignment="Center" HorizontalAlignment="Right" Opacity="0.8" />
+                        <TextBlock Grid.Column="4" Text="{Binding ModifiedText}" VerticalAlignment="Center" Opacity="0.8" />
                     </Grid>
                 </Button>
                 <ItemsControl ItemsSource="{Binding Children}" Margin="0" HorizontalAlignment="Stretch" />
@@ -73,9 +73,9 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="{Binding ColumnNameWidth, RelativeSource={RelativeSource AncestorType=win:DiskManagementWindow}, Mode=TwoWay, Converter={StaticResource GridLengthConverter}}" />
                                 <ColumnDefinition Width="6" />
-                                <ColumnDefinition Width="{Binding ColumnModifiedWidth, RelativeSource={RelativeSource AncestorType=win:DiskManagementWindow}, Mode=TwoWay, Converter={StaticResource GridLengthConverter}}" />
-                                <ColumnDefinition Width="6" />
                                 <ColumnDefinition Width="{Binding ColumnSizeWidth, RelativeSource={RelativeSource AncestorType=win:DiskManagementWindow}, Mode=TwoWay, Converter={StaticResource GridLengthConverter}}" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="{Binding ColumnModifiedWidth, RelativeSource={RelativeSource AncestorType=win:DiskManagementWindow}, Mode=TwoWay, Converter={StaticResource GridLengthConverter}}" />
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0" Text="名称" VerticalAlignment="Center" Opacity="0.8" />
@@ -84,13 +84,13 @@
                         <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="Transparent" Cursor="SizeWestEast" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
                         <Rectangle Grid.Column="1" Width="1" HorizontalAlignment="Center" Fill="{StaticResource MesenGrayBorderColor}" IsHitTestVisible="False" />
 
-                        <TextBlock Grid.Column="2" Text="修改时间" VerticalAlignment="Center" Opacity="0.8" />
+                        <TextBlock Grid.Column="2" Text="大小" VerticalAlignment="Center" HorizontalAlignment="Right" Opacity="0.8" />
 
                         <!-- 第二条可拖动分隔线：视觉为 1px，交互区为 6 DIP -->
                         <GridSplitter Grid.Column="3" Width="6" HorizontalAlignment="Stretch" Background="Transparent" Cursor="SizeWestEast" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
                         <Rectangle Grid.Column="3" Width="1" HorizontalAlignment="Center" Fill="{StaticResource MesenGrayBorderColor}" IsHitTestVisible="False" />
 
-                        <TextBlock Grid.Column="4" Text="大小" VerticalAlignment="Center" HorizontalAlignment="Right" Opacity="0.8" />
+                        <TextBlock Grid.Column="4" Text="修改时间" VerticalAlignment="Center" Opacity="0.8" />
                     </Grid>
 
                     <!-- 移除对 Viewport.Width 的强制绑定，使 ItemsControl 能根据内容宽度伸展，
