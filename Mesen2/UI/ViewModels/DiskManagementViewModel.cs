@@ -144,6 +144,49 @@ namespace Mesen.ViewModels
 			private set => this.RaiseAndSetIfChanged(ref _statusText, value);
 		}
 
+		// 可调整的列宽属性（单位：DIP），用于在 UI 中绑定并通过 GridSplitter 调整
+		private double _columnNameWidth = 160.0;
+		private double _columnModifiedWidth = 120.0;
+		private double _columnSizeWidth = 60.0;
+
+		/// <summary>
+		/// 名称列宽（可调整）。
+		/// </summary>
+		public double ColumnNameWidth {
+			get => _columnNameWidth;
+			set {
+				this.RaiseAndSetIfChanged(ref _columnNameWidth, value);
+				this.RaisePropertyChanged(nameof(ColumnTotalWidth));
+			}
+		}
+
+		/// <summary>
+		/// 修改时间列宽（可调整）。
+		/// </summary>
+		public double ColumnModifiedWidth {
+			get => _columnModifiedWidth;
+			set {
+				this.RaiseAndSetIfChanged(ref _columnModifiedWidth, value);
+				this.RaisePropertyChanged(nameof(ColumnTotalWidth));
+			}
+		}
+
+		/// <summary>
+		/// 大小列宽（可调整）。
+		/// </summary>
+		public double ColumnSizeWidth {
+			get => _columnSizeWidth;
+			set {
+				this.RaiseAndSetIfChanged(ref _columnSizeWidth, value);
+				this.RaisePropertyChanged(nameof(ColumnTotalWidth));
+			}
+		}
+
+		/// <summary>
+		/// 三列以及两个分隔器的总宽度，用于让标题栏与内容对齐。
+		/// </summary>
+		public double ColumnTotalWidth => _columnNameWidth + _columnModifiedWidth + _columnSizeWidth + 12.0;
+
 		/// <summary>
 		/// 当前选中的文件节点（通过列表中每项的 SelectCommand 设置）。
 		/// </summary>

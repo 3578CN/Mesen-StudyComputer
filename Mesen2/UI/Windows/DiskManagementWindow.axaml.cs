@@ -9,13 +9,20 @@ using Mesen.Interop;
 using Mesen.Utilities;
 using Mesen.Localization;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 
 namespace Mesen.Windows
 {
-    public class DiskManagementWindow : MesenWindow
+    public class DiskManagementWindow : MesenWindow, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private void OnPropertyChanged(string name)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
     private DiskManagementViewModel? _model;
     private NotificationListener? _listener;
     // 去抖定时器：在收到多次磁盘 I/O 通知时，合并 200ms 内的刷新请求
@@ -24,6 +31,41 @@ namespace Mesen.Windows
     private Avalonia.Point? _dragStartPos;
     private Mesen.ViewModels.DiskDirectoryNode? _dragNode;
     private Avalonia.Controls.Control? _dragSourceControl;
+
+        // 窗口级代理属性：将列宽的读写代理到 ViewModel，供 XAML 绑定使用
+        public double ColumnNameWidth {
+            get => _model?.ColumnNameWidth ?? 240.0;
+            set {
+                if(_model != null) _model.ColumnNameWidth = value;
+                OnPropertyChanged(nameof(ColumnNameWidth));
+                OnPropertyChanged(nameof(ColumnTotalWidth));
+            }
+        }
+
+        public double ColumnModifiedWidth {
+            get => _model?.ColumnModifiedWidth ?? 140.0;
+            set {
+                if(_model != null) _model.ColumnModifiedWidth = value;
+                OnPropertyChanged(nameof(ColumnModifiedWidth));
+                OnPropertyChanged(nameof(ColumnTotalWidth));
+            }
+        }
+
+        public double ColumnSizeWidth {
+            get => _model?.ColumnSizeWidth ?? 100.0;
+            set {
+                if(_model != null) _model.ColumnSizeWidth = value;
+                OnPropertyChanged(nameof(ColumnSizeWidth));
+                OnPropertyChanged(nameof(ColumnTotalWidth));
+            }
+        }
+
+        public double ColumnTotalWidth {
+            get {
+                if(_model != null) return _model.ColumnTotalWidth;
+                return 240.0 + 140.0 + 100.0 + 12.0;
+            }
+        }
 
         public DiskManagementWindow()
         {
