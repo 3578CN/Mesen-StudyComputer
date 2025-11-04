@@ -25,6 +25,8 @@
 
 			<Border.ContextMenu>
 				<ContextMenu>
+					<MenuItem Header="磁盘管理" Click="OpenDiskManagement_Click" />
+					<Separator />
 					<MenuItem Header="弹出软盘" Click="EjectFloppy_Click" />
 				</ContextMenu>
 			</Border.ContextMenu>

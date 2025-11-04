@@ -256,5 +256,63 @@ namespace Mesen.Views
 				model.SetFloppyStatus("软盘已弹出！");
 			}
 		}
+
+		private void OpenDiskManagement_Click(object? sender, RoutedEventArgs e)
+		{
+			// 打开磁盘管理窗口：如果已存在则激活，否则创建并按主窗口定位展示
+			try {
+				var mainWnd = ApplicationHelper.GetActiveOrMainWindow();
+				var existing = ApplicationHelper.GetExistingWindow<Mesen.Windows.DiskManagementWindow>();
+				if(existing != null) {
+					existing.BringToFront();
+					return;
+				}
+				if(mainWnd != null) {
+					try {
+						var dlg = new Mesen.Windows.DiskManagementWindow();
+						// 保持与主窗口相同高度
+						dlg.Height = mainWnd.Height;
+						if(double.IsNaN(dlg.Width) || dlg.Width <= 0) dlg.Width = 360;
+						try {
+							var controlPosition = mainWnd.Position;
+							double scale = 1.0;
+							try {
+								var parentWndBase = mainWnd as Avalonia.Controls.WindowBase;
+								var scr = parentWndBase?.Screens.ScreenFromVisual(parentWndBase);
+								if(scr != null) {
+									var scalingProp = scr.GetType().GetProperty("Scaling");
+									if(scalingProp != null) {
+										var val = scalingProp.GetValue(scr);
+										if(val is double d) scale = d;
+										else if(val is float f) scale = f;
+									}
+								}
+							} catch { scale = 1.0; }
+							double dlgWidthDip = dlg.FrameSize?.Width ?? dlg.Width;
+							if(double.IsNaN(dlgWidthDip) || dlgWidthDip <= 0) dlgWidthDip = 300;
+							int dlgWidthPx = (int)(dlgWidthDip * scale);
+							var startPosition = new Avalonia.PixelPoint(controlPosition.X - dlgWidthPx, controlPosition.Y);
+							dlg.WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.Manual;
+							EventHandler? openedHandler = null;
+							openedHandler = (s2, e2) => {
+								try {
+									double actualDlgWidthDip = dlg.FrameSize?.Width ?? dlg.Width;
+									if(double.IsNaN(actualDlgWidthDip) || actualDlgWidthDip <= 0) actualDlgWidthDip = dlgWidthDip;
+									int actualDlgWidthPx = (int)(actualDlgWidthDip * scale);
+									int extraPx = (int)(12 * scale);
+									dlg.Position = new Avalonia.PixelPoint(controlPosition.X - actualDlgWidthPx + extraPx, controlPosition.Y);
+								} catch { }
+								dlg.Opened -= openedHandler;
+							};
+							dlg.Opened += openedHandler;
+							dlg.Show(mainWnd);
+							return;
+						} catch { }
+					} catch { }
+				}
+				// 回退：使用单例创建器
+				ApplicationHelper.GetOrCreateUniqueWindow(null, () => new Mesen.Windows.DiskManagementWindow());
+			} catch { }
+		}
 	}
 }
