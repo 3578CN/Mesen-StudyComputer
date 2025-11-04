@@ -203,6 +203,24 @@ namespace Mesen.Interop
 				return null;
 			}
 		}
+
+			/// <summary>
+			/// 从当前加载的软盘镜像删除指定文件（不弹确认框）。
+			/// 返回 true 表示成功，false 表示失败。
+			/// </summary>
+			[DllImport(DllPath, EntryPoint = "Floppy_DeleteFile")]
+			private static extern int FloppyDeleteFileNative([MarshalAs(UnmanagedType.LPStr)] string filename);
+
+			public static bool FloppyDeleteFile(string filename)
+			{
+				if(string.IsNullOrEmpty(filename)) return false;
+				try {
+					int res = FloppyDeleteFileNative(filename);
+					return res == 1;
+				} catch {
+					return false;
+				}
+			}
 	}
 
 	public struct TimingInfo

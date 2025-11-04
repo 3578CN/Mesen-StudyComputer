@@ -376,6 +376,14 @@ extern "C" {
 		return _fdc->ReadFileToBuffer(filename, outBuffer, maxLength);
 	}
 
+// 从当前加载的软盘镜像中删除指定文件（仅根目录）。
+DllExport int __stdcall Floppy_DeleteFile(char* filename)
+{
+    if(!_fdc) return 0;
+    if(!filename) return 0;
+    return _fdc->DeleteFileByName(filename);
+}
+
 	class PgoKeyManager : public IKeyManager
 	{
 	public:

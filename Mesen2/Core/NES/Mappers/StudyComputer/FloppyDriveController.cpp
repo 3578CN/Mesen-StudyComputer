@@ -1596,3 +1596,127 @@ int FloppyDriveController::ReadFileToBuffer(const char* filename, unsigned char*
 
 	return (int)toCopy;
 }
+
+	/**
+	 * 从镜像根目录中删除指定文件的实现（仅限根目录）。
+	 * 实现策略：
+	 * 1) 根据 ParseDirectoryData/FindFileNodeByName 查找文件的首簇和大小；
+	 * 2) 在根目录表中找到对应的目录项并将首字节标记为 0xE5（已删除）；
+	 * 3) 释放该文件占用的 FAT 簇链（将 FAT 条目置 0），并写回所有 FAT 副本；
+	 * 4) 将根目录表写回镜像并刷新。
+	 * 仅针对根目录项执行删除（不递归），并在出现 I/O 活动或错误时返回失败。
+	 */
+	int FloppyDriveController::DeleteFileByName(const char* filename)
+	{
+		if(!pDiskFile || !filename) return 0;
+		if(IsActive()) return 0; // 正在 I/O 时拒绝修改
+
+		FilePositionGuard guard(pDiskFile);
+
+		Fat12Context ctx;
+		if(!LoadFat12Context(pDiskFile, nDiskSize, ctx)) return 0;
+
+		vector<uint8_t> fatData;
+		if(!LoadFatTable(pDiskFile, ctx, fatData)) return 0;
+
+		if(ctx.rootEntryCount == 0) return 0;
+		vector<uint8_t> rootBuffer((size_t)ctx.rootEntryCount * 32);
+		if(!ReadBytes(pDiskFile, (long)ctx.rootDirOffset, rootBuffer.data(), rootBuffer.size())) return 0;
+
+		// 使用现有解析逻辑寻找文件的首簇与大小
+		vector<FdcFileNode> children;
+		ParseDirectoryData(pDiskFile, ctx, fatData, rootBuffer.data(), rootBuffer.size(), children);
+
+		uint16_t firstCluster = 0;
+		uint32_t size = 0;
+		if(!FindFileNodeByName(children, filename, firstCluster, size)) {
+			return 0; // 未找到
+		}
+
+		// 在根目录原始表中定位对应的短目录项索引（跳过 LFN 条目）
+		int entryIndex = -1;
+		for(uint32_t i = 0; i < ctx.rootEntryCount; ++i) {
+			uint8_t first = rootBuffer[i * 32];
+			if(first == 0x00) break;
+			uint8_t attr = rootBuffer[i * 32 + 11];
+			if(attr == 0x0F) continue; // LFN
+			uint16_t fc = (uint16_t)(rootBuffer[i * 32 + 26] | (rootBuffer[i * 32 + 27] << 8));
+			uint32_t fsize = (uint32_t)(rootBuffer[i * 32 + 28] | (rootBuffer[i * 32 + 29] << 8) | (rootBuffer[i * 32 + 30] << 16) | (rootBuffer[i * 32 + 31] << 24));
+			if(fc == firstCluster && fsize == size) {
+				entryIndex = (int)i;
+				break;
+			}
+		}
+
+		// 若未通过簇/大小定位到目录项，则回退使用长名/短名解析匹配（复制 ParseDirectoryData 的解析方式）
+		if(entryIndex == -1) {
+			vector<std::u16string> longNameParts;
+			for(uint32_t i = 0; i < ctx.rootEntryCount; ++i) {
+				const uint8_t* entry = rootBuffer.data() + i * 32;
+				uint8_t first = entry[0];
+				if(first == 0x00) break;
+				uint8_t attr = entry[11];
+				if(attr == 0x0F) {
+					uint8_t sequence = entry[0] & 0x1F;
+					if((entry[0] & 0x40) != 0) {
+						longNameParts.clear();
+						longNameParts.resize(sequence);
+					}
+					if(sequence >= 1 && sequence <= longNameParts.size()) {
+						longNameParts[sequence - 1] = ExtractLongNameSegment(entry);
+					}
+					continue;
+				}
+				if(first == 0xE5) { longNameParts.clear(); continue; }
+				if(attr & 0x08) { longNameParts.clear(); continue; }
+
+				string name;
+				if(!longNameParts.empty()) {
+					name = BuildLongName(longNameParts);
+				}
+				if(name.empty()) {
+					name = BuildShortName(entry, entry + 8);
+				}
+				longNameParts.clear();
+
+				if(name == filename) {
+					entryIndex = (int)i;
+					break;
+				}
+			}
+		}
+
+		if(entryIndex == -1) return 0; // 仍未找到
+
+		// 释放簇链（若存在首簇）
+		if(firstCluster >= 2) {
+			uint16_t cluster = firstCluster;
+			uint32_t maxIter = ctx.totalClusters + 2;
+			uint32_t iter = 0;
+			while(cluster >= 2 && cluster < 0xFF0 && iter++ < maxIter) {
+				uint16_t next = ReadFatValue(fatData, cluster);
+				if(!WriteFatValue(fatData, cluster, 0)) return 0;
+				if(next >= 0xFF8 || next == 0) break;
+				cluster = next;
+			}
+		}
+
+		// 标记目录项为已删除
+		rootBuffer[entryIndex * 32] = 0xE5;
+
+		// 将修改后的根目录写回
+		if(::fseek(pDiskFile, ctx.rootDirOffset, SEEK_SET) != 0) return 0;
+		if(::fwrite(rootBuffer.data(), 1, rootBuffer.size(), pDiskFile) != rootBuffer.size()) return 0;
+
+		// 将修改后的 FAT 写回所有副本
+		uint32_t fatSize = ctx.sectorsPerFat * ctx.bytesPerSector;
+		for(uint32_t copy = 0; copy < ctx.fatCount; ++copy) {
+			long fatPos = (long)(ctx.fatOffset + copy * fatSize);
+			if(::fseek(pDiskFile, fatPos, SEEK_SET) != 0) return 0;
+			if(::fwrite(fatData.data(), 1, fatData.size(), pDiskFile) != fatData.size()) return 0;
+		}
+
+		::fflush(pDiskFile);
+
+		return 1;
+	}

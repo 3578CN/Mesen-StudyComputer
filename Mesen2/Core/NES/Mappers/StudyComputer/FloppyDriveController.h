@@ -54,6 +54,14 @@ public:
 	 */
 	int ReadFileToBuffer(const char* filename, unsigned char* outBuffer, uint32_t maxLength);
 
+	/**
+	 * 从镜像中删除指定文件（仅支持根目录，支持短/长名匹配）。
+	 * 不递归删除子目录，也不额外处理长文件名条目的复杂清理（与现有写入行为保持一致）。
+	 * @param filename 要删除的文件名（与 GetFileSize/ReadFileToBuffer 支持相同的匹配规则）
+	 * @return 返回 1 表示成功，0 表示失败（例如镜像未加载、正在 I/O、文件不存在或写回失败）。
+	 */
+	int DeleteFileByName(const char* filename);
+
 	// IO: nPort: 0-7
 	unsigned char Read(unsigned char nPort);
 	void Write(unsigned char nPort, unsigned nData);

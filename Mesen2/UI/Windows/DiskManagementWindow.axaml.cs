@@ -38,6 +38,8 @@ namespace Mesen.Windows
             AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             AddHandler(InputElement.PointerMovedEvent, OnPointerMoved, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+            // 支持通过键盘 Delete 键删除所选文件（不弹确认框）
+            AddHandler(InputElement.KeyDownEvent, OnKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         }
 
         private void InitializeComponent()
@@ -177,6 +179,29 @@ namespace Mesen.Windows
             _dragStartPos = null;
             _dragNode = null;
             _dragSourceControl = null;
+        }
+
+        /// <summary>
+        /// 处理键盘按下事件，按 Delete 键删除选中的文件（不弹确认框）。
+        /// </summary>
+        private void OnKeyDown(object? sender, KeyEventArgs e)
+        {
+            try {
+                if(e.Key == Key.Delete) {
+                    var node = _model?.SelectedNode;
+                    if(node != null && !node.IsDirectory) {
+                        bool ok = EmuApi.FloppyDeleteFile(node.Name);
+                        if(ok) {
+                            // 删除成功后刷新视图
+                            Dispatcher.UIThread.Post(() => {
+                                try { _model?.Refresh(); } catch { }
+                            });
+                        } else {
+                            DisplayMessageHelper.DisplayMessage("Error", "删除失败: " + node.Name);
+                        }
+                    }
+                }
+            } catch { }
         }
 
     private void StartDragForNode(Mesen.ViewModels.DiskDirectoryNode node, Control? source)
