@@ -60,7 +60,7 @@ private:
     GlyphBitmap _missingGlyph;
     std::mutex _mutex;
 
-    static constexpr int _fontPixelHeight = 18;
+    static constexpr int _fontPixelHeight = 12;
 };
 
 #endif
