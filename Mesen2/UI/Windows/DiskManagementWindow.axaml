@@ -29,6 +29,7 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="{Binding ColumnNameWidth, RelativeSource={RelativeSource AncestorType=win:DiskManagementWindow}, Mode=TwoWay, Converter={StaticResource GridLengthConverter}}" />
+                            <!-- 保留较宽的交互区域（6 DIP）以便拖拽，但实际可见线为 1px -->
                             <ColumnDefinition Width="6" />
                             <ColumnDefinition Width="{Binding ColumnModifiedWidth, RelativeSource={RelativeSource AncestorType=win:DiskManagementWindow}, Mode=TwoWay, Converter={StaticResource GridLengthConverter}}" />
                             <ColumnDefinition Width="6" />
@@ -54,7 +55,7 @@
             </StackPanel>
         </Border>
 
-        <Border BorderThickness="1" BorderBrush="{StaticResource MesenGrayBorderColor}">
+    <Border BorderThickness="0 1 0 0" BorderBrush="{StaticResource MesenGrayBorderColor}">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="0">
                 <!-- 标题行放在 ScrollViewer 内部，使其随列表一起滚动并与行模板对齐 -->
                 <StackPanel>
@@ -70,13 +71,15 @@
 
                         <TextBlock Grid.Column="0" Text="名称" VerticalAlignment="Center" FontWeight="SemiBold" />
 
-                        <!-- 第一条可拖动分隔线 -->
-                        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+                        <!-- 第一条可拖动分隔线：视觉为 1px，交互区为 6 DIP -->
+                        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="Transparent" Cursor="SizeWestEast" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+                        <Rectangle Grid.Column="1" Width="1" HorizontalAlignment="Center" Fill="{StaticResource MesenGrayBorderColor}" IsHitTestVisible="False" />
 
                         <TextBlock Grid.Column="2" Text="修改时间" VerticalAlignment="Center" Opacity="0.8" />
 
-                        <!-- 第二条可拖动分隔线 -->
-                        <GridSplitter Grid.Column="3" Width="6" HorizontalAlignment="Stretch" Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+                        <!-- 第二条可拖动分隔线：视觉为 1px，交互区为 6 DIP -->
+                        <GridSplitter Grid.Column="3" Width="6" HorizontalAlignment="Stretch" Background="Transparent" Cursor="SizeWestEast" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+                        <Rectangle Grid.Column="3" Width="1" HorizontalAlignment="Center" Fill="{StaticResource MesenGrayBorderColor}" IsHitTestVisible="False" />
 
                         <TextBlock Grid.Column="4" Text="大小" VerticalAlignment="Center" HorizontalAlignment="Right" Opacity="0.8" />
                     </Grid>

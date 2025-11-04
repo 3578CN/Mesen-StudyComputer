@@ -17,7 +17,8 @@ namespace Mesen.Windows
 {
     public class DiskManagementWindow : MesenWindow, INotifyPropertyChanged
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
+        // 明确使用 new 隐藏基类的 PropertyChanged 事件，表示这是 INotifyPropertyChanged 的实现
+        public new event PropertyChangedEventHandler? PropertyChanged;
 
         private void OnPropertyChanged(string name)
         {
