@@ -275,6 +275,22 @@ namespace Mesen.Views
 			}
 		}
 
+		private async void InsertFloppy_Click(object? sender, RoutedEventArgs e)
+		{
+			try {
+				// 打开文件对话框以选择 .ima/.img 镜像并加载为软盘
+				string? filePath = await FileDialogHelper.OpenFile(null, ApplicationHelper.GetMainWindow(), "ima", "img");
+				if(!string.IsNullOrEmpty(filePath)) {
+					if(File.Exists(filePath)) {
+						try {
+							int state = EmuApi.FloppyLoadDiskImage(filePath);
+							if(DataContext is MainMenuViewModel model) { model.SetFloppyStatus(Path.GetFileName(filePath)); }
+						} catch { }
+					}
+				}
+			} catch { }
+		}
+
 		private void OpenDiskManagement_Click(object? sender, RoutedEventArgs e)
 		{
 			// 打开磁盘管理窗口：如果已存在则激活，否则创建并按主窗口定位展示
