@@ -20,8 +20,10 @@
 			<MenuItem Header="{l:Translate mnuHelp}" ItemsSource="{Binding HelpMenuItems}" />
 		</c:MesenMenu>
 
-		<!-- 菜单右侧显示加载的软盘镜像文件 -->
-		<Border Name="FloppyPanel" DockPanel.Dock="Left" Background="Transparent" Margin="1,0,1,0" Padding="0">
+			<!-- 菜单右侧显示加载的软盘镜像文件 -->
+			<!-- 保持原始的竖线分隔符位置：分隔线仍停靠在菜单区域的右侧 -->
+		<Rectangle Width="1" Height="18" Fill="#8A8A8A" Margin="0" VerticalAlignment="Center" DockPanel.Dock="Left" />
+	<Border Name="FloppyPanel" DockPanel.Dock="Right" Background="Transparent" Margin="1,0,1,0" Padding="0" HorizontalAlignment="Right">
 
 			<Border.ContextMenu>
 				<ContextMenu>
@@ -31,16 +33,17 @@
 				</ContextMenu>
 			</Border.ContextMenu>
 
-			<StackPanel Name="FloppyInner" Orientation="Horizontal" VerticalAlignment="Center" Background="Transparent">
+			<StackPanel Name="FloppyInner" Orientation="Horizontal" VerticalAlignment="Center" Background="Transparent" HorizontalAlignment="Right">
 				<!-- 竖线分隔符，背景不应覆盖它 -->
-				<Rectangle Width="1" Height="18" Fill="#8A8A8A" Margin="0" VerticalAlignment="Center" />
+				<!-- 分隔线保留原注释，实际分隔线元素已放在 DockPanel 的菜单区域（不随 FloppyPanel 移动） -->
 				<!-- 右侧内容区：悬停背景只作用到这里（FloppyContent） -->
 				<Border Name="FloppyContent" VerticalAlignment="Center" Background="Transparent" Margin="3,0,0,0" Padding="2,4">
 					<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Background="Transparent">
+						<!-- 镜像文件名先显示，磁盘指示灯放在文件名右侧 -->
+						<TextBlock Name="FloppyStatusText" FontWeight="Bold" Text="{Binding FloppyStatus}" Margin="6,0,6,0" />
 						<!-- 使用 Border 模拟软驱灯长方形（带细边框与圆角），默认灰色，UI 将根据核心活动更新颜色 -->
 						<!-- 初始 BorderBrush 也设置为灰色，避免在 UI 初始化前出现绿色边框 -->
-						<Border Name="FloppyLed" Width="14" Height="9" VerticalAlignment="Center" Margin="6,0,6,0" Background="#FF8A8A8A" BorderBrush="#FFC0C0C0" BorderThickness="1" CornerRadius="2" />
-						<TextBlock Name="FloppyStatusText" FontWeight="Bold" Text="{Binding FloppyStatus}" Margin="0,0,6,0" />
+						<Border Name="FloppyLed" Width="14" Height="9" VerticalAlignment="Center" Margin="0,0,6,0" Background="#FF8A8A8A" BorderBrush="#FFC0C0C0" BorderThickness="1" CornerRadius="2" />
 					</StackPanel>
 				</Border>
 			</StackPanel>
