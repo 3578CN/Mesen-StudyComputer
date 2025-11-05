@@ -104,12 +104,12 @@ namespace Mesen.Windows
 
 		private void OnMesenLinkTapped(object? sender, TappedEventArgs e)
 		{
-			ApplicationHelper.OpenBrowser("https://github.com/3578CN/StudyComputer");
+			ApplicationHelper.OpenBrowser("https://github.com/sengbin/Mesen-StudyComputer");
 		}
 
 		private void OnCommitLinkTapped(object? sender, TappedEventArgs e)
 		{
-			ApplicationHelper.OpenBrowser("https://github.com/3578CN/StudyComputer/commit/" + BuildSha);
+			ApplicationHelper.OpenBrowser("https://github.com/sengbin/Mesen-StudyComputer/commit/" + BuildSha);
 		}
 	}
 
