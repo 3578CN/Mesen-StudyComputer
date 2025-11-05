@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "WS/WsConsole.h"
 #include "WS/WsCpu.h"
 #include "WS/WsPpu.h"
@@ -452,7 +452,7 @@ void WsConsole::Serialize(Serializer& s)
 	SV(model);
 	if(!s.IsSaving() && (model == WsModel::Monochrome) != (_model == WsModel::Monochrome)) {
 		bool isMono = _model == WsModel::Monochrome;
-		MessageManager::DisplayMessage("SaveStates", isMono ? "Can't load WSC state in WS mode." : "Can't load WS state in WSC mode.");
+		MessageManager::DisplayMessage("SaveStates", isMono ? u8"无法在 WS 模式下加载 WSC 存档。" : u8"无法在 WSC 模式下加载 WS 存档。");
 		s.SetErrorFlag();
 		return;
 	}

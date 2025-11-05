@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include <regex>
 #include "Shared/CheatManager.h"
 #include "Shared/MessageManager.h"
@@ -63,7 +63,7 @@ void CheatManager::SetCheats(vector<CheatCode>& codes)
 	ClearCheats(false);
 	for(CheatCode &code : codes) {
 		if(!AddCheat(code)) {
-			MessageManager::DisplayMessage("Cheats", "Invalid cheat: " + string(code.Code));
+			MessageManager::DisplayMessage("Cheats", u8"无效的作弊码： " + string(code.Code));
 		}
 	}
 

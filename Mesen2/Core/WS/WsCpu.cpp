@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "WS/WsCpu.h"
 #include "WS/WsConsole.h"
 #include "WS/WsMemoryManager.h"
@@ -824,7 +824,7 @@ void WsCpu::Halt()
 	Idle<12>();
 	_state.Halted = true;
 	if(_memoryManager->IsPowerOffRequested()) {
-		MessageManager::DisplayMessage("WS", "Power off.");
+		MessageManager::DisplayMessage("WS", u8"已关机。");
 		_state.PowerOff = true;
 	}
 }

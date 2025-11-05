@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "NES/RomData.h"
 #include "NES/GameDatabase.h"
 #include "NES/Loaders/UnifLoader.h"
@@ -284,7 +284,7 @@ void GameDatabase::SetGameInfo(uint32_t romCrc, RomData &romData, bool updateRom
 		}
 
 #ifdef _DEBUG
-		MessageManager::DisplayMessage("DB", "Mapper: " + std::to_string(romData.Info.MapperID) + "  Sub: " + std::to_string(romData.Info.SubMapperID) + "  System: " + info.System);
+		MessageManager::DisplayMessage("DB", u8"映射器：" + std::to_string(romData.Info.MapperID) + u8"  子映射器：" + std::to_string(romData.Info.SubMapperID) + u8"  系统：" + info.System);
 #endif
 	} else {
 		MessageManager::Log("[DB] Game not found in database");

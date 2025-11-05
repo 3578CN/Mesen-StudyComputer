@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include <random>
 #include <assert.h>
 #include "Utilities/Serializer.h"
@@ -581,7 +581,7 @@ void NesCpu::HLT()
 	if(!_hideCrashWarning) {
 		_hideCrashWarning = true;
 
-		MessageManager::DisplayMessage("Error", "GameCrash", "Invalid OP code - CPU crashed.");
+		MessageManager::DisplayMessage("Error", "GameCrash", u8"无效的操作码 - CPU 崩溃。");
 		_emu->BreakIfDebugging(CpuType::Nes, BreakSource::NesBreakOnCpuCrash);
 
 		if(!_emu->IsDebugging() && _console->GetRomFormat() == RomFormat::Nsf) {

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "pch.h"
 #include "Shared/Emulator.h"
 #include "Shared/MessageManager.h"
@@ -146,7 +146,7 @@ public:
 			return true;
 		}
 
-		MessageManager::DisplayMessage("Error", "Could not find firmware file for DSP: " + combinedFilename);
+		MessageManager::DisplayMessage("Error", u8"找不到 DSP 的固件文件： " + combinedFilename);
 		return false;
 	}
 
@@ -165,7 +165,7 @@ public:
 			return true;
 		}
 
-		MessageManager::DisplayMessage("Error", "Could not find firmware file for ST018");
+		MessageManager::DisplayMessage("Error", u8"找不到 ST018 的固件文件");
 		return false;
 	}
 
@@ -182,7 +182,7 @@ public:
 			return true;
 		}
 
-		MessageManager::DisplayMessage("Error", "Could not find firmware file for BS-X");
+		MessageManager::DisplayMessage("Error", u8"找不到 BS-X 的固件文件");
 		return false;
 	}
 
@@ -201,7 +201,7 @@ public:
 			return true;
 		}
 
-		MessageManager::DisplayMessage("Error", "Could not find firmware file for Sufami Turbo");
+		MessageManager::DisplayMessage("Error", u8"找不到 Sufami Turbo 的固件文件");
 		return false;
 	}
 
@@ -221,7 +221,7 @@ public:
 				return true;
 			}
 
-			MessageManager::DisplayMessage("Error", "Could not find firmware file for Super Game Boy");
+			MessageManager::DisplayMessage("Error", u8"找不到 Super Game Boy 的固件文件");
 		}
 		return false;
 	}
@@ -270,7 +270,7 @@ public:
 			return true;
 		}
 
-		MessageManager::DisplayMessage("Error", "Could not find BIOS rom: " + filename);
+		MessageManager::DisplayMessage("Error", u8"找不到 BIOS ROM： " + filename);
 		return false;
 	}
 
@@ -289,7 +289,7 @@ public:
 			return true;
 		}
 
-		MessageManager::DisplayMessage("Error", "Could not find firmware file for Famicom Disk System");
+		MessageManager::DisplayMessage("Error", u8"找不到 Famicom Disk System 的固件文件");
 		return false;
 	}
 
@@ -308,7 +308,7 @@ public:
 			return true;
 		}
 
-		MessageManager::DisplayMessage("Error", "Could not find firmware file for Study Box");
+		MessageManager::DisplayMessage("Error", u8"找不到 Study Box 的固件文件");
 		return false;
 	}
 
@@ -328,7 +328,7 @@ public:
 			return true;
 		}
 
-		MessageManager::DisplayMessage("Error", "Could not find firmware file for PC Engine CD-ROM");
+		MessageManager::DisplayMessage("Error", u8"找不到 PC Engine CD-ROM 的固件文件");
 		return false;
 	}
 
@@ -347,7 +347,7 @@ public:
 			return true;
 		}
 
-		MessageManager::DisplayMessage("Error", "Could not find firmware file for the Games Express Card");
+		MessageManager::DisplayMessage("Error", u8"找不到 Games Express Card 的固件文件");
 		return false;
 	}
 
@@ -378,7 +378,7 @@ public:
 			return true;
 		}
 
-		MessageManager::DisplayMessage("Error", "Could not find firmware file for the ColecoVision");
+		MessageManager::DisplayMessage("Error", u8"找不到 ColecoVision 的固件文件");
 		return false;
 	}
 
@@ -405,7 +405,7 @@ public:
 			return true;
 		}
 
-		MessageManager::DisplayMessage("Error", "Could not find boot rom for the WonderSwan, skipping boot screen.");
+		MessageManager::DisplayMessage("Error", u8"找不到 WonderSwan 的启动 ROM，跳过启动画面。");
 		return false;
 	}
 
@@ -424,7 +424,7 @@ public:
 			return true;
 		}
 
-		MessageManager::DisplayMessage("Error", "Could not find ADPCM ROM for YMF288 (EPSM) - sound emulation will be incorrect.");
+		MessageManager::DisplayMessage("Error", u8"找不到 YMF288 (EPSM) 的 ADPCM ROM - 声音仿真将不正确。");
 		return false;
 	}
 

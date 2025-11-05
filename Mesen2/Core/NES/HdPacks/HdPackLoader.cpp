@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include <algorithm>
 #include <unordered_map>
 #include "NES/HdPacks/HdPackLoader.h"
@@ -206,7 +206,7 @@ bool HdPackLoader::LoadPack()
 
 		if(_errorCount > 0) {
 			if(_data->Version >= 109) {
-				MessageManager::DisplayMessage("HDPack", "Loaded with " + std::to_string(_errorCount) + " errors");
+				MessageManager::DisplayMessage("HDPack", u8"加载完成，出现 " + std::to_string(_errorCount) + u8" 个错误");
 			}
 			MessageManager::Log("[HDPack] Loaded with " + std::to_string(_errorCount) + " errors");
 		}

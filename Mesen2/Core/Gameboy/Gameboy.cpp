@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Gameboy/Gameboy.h"
 #include "Gameboy/GbCpu.h"
 #include "Gameboy/GbPpu.h"
@@ -457,7 +457,7 @@ LoadRomResult Gameboy::LoadRom(VirtualFile& romFile)
 			}
 			return LoadRomResult::Success;
 		} else {
-			MessageManager::DisplayMessage("Error", "Unsupported cart type: " + (gbxFooter.IsValid() ? gbxFooter.GetMapperId() : std::to_string(header.CartType)));
+			MessageManager::DisplayMessage("Error", u8"不支持的卡带类型： " + (gbxFooter.IsValid() ? gbxFooter.GetMapperId() : std::to_string(header.CartType)));
 			return LoadRomResult::Failure;
 		}
 	}

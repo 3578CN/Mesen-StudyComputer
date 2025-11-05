@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include <random>
 #include <assert.h>
 #include "NES/BaseMapper.h"
@@ -64,7 +64,7 @@ void BaseMapper::SetCpuMemoryMapping(uint16_t startAddr, uint16_t endAddr, int16
 			pageSize = InternalGetSaveRamPageSize();
 			if(pageSize == 0) {
 				#ifdef _DEBUG
-				MessageManager::DisplayMessage("Debug", "Tried to map undefined save ram.");
+				MessageManager::DisplayMessage("Debug", u8"尝试映射未定义的存档 RAM。");
 				#endif
 				return;
 			}
@@ -76,7 +76,7 @@ void BaseMapper::SetCpuMemoryMapping(uint16_t startAddr, uint16_t endAddr, int16
 			pageSize = InternalGetWorkRamPageSize();
 			if(pageSize == 0) {
 				#ifdef _DEBUG
-				MessageManager::DisplayMessage("Debug", "Tried to map undefined work ram.");
+				MessageManager::DisplayMessage("Debug", u8"尝试映射未定义的工作 RAM。");
 				#endif
 				return;
 			}
@@ -91,7 +91,7 @@ void BaseMapper::SetCpuMemoryMapping(uint16_t startAddr, uint16_t endAddr, int16
 
 	if(pageCount == 0) {
 		#ifdef _DEBUG
-		MessageManager::DisplayMessage("Debug", "Tried to map undefined save/work ram.");
+		MessageManager::DisplayMessage("Debug", u8"尝试映射未定义的存档/工作 RAM。");
 		#endif
 		return;
 	}
@@ -112,7 +112,7 @@ void BaseMapper::SetCpuMemoryMapping(uint16_t startAddr, uint16_t endAddr, int16
 		#ifdef _DEBUG
 		uint16_t gap = endAddr - startAddr + 1;
 		if(gap % pageSize != 0) {
-			MessageManager::DisplayMessage("Debug", "Tried to map undefined prg - page size too small for selected range.");
+			MessageManager::DisplayMessage("Debug", u8"尝试映射未定义的 PRG - 页面大小对于所选范围太小。");
 		}
 		#endif
 		
@@ -219,7 +219,7 @@ void BaseMapper::SetPpuMemoryMapping(uint16_t startAddr, uint16_t endAddr, uint1
 			pageSize = InternalGetChrRomPageSize();
 			if(pageSize == 0) {
 				#ifdef _DEBUG
-				MessageManager::DisplayMessage("Debug", "Tried to map undefined chr rom.");
+				MessageManager::DisplayMessage("Debug", u8"尝试映射未定义的 CHR ROM。");
 				#endif
 				return;
 			}
@@ -230,7 +230,7 @@ void BaseMapper::SetPpuMemoryMapping(uint16_t startAddr, uint16_t endAddr, uint1
 			pageSize = InternalGetChrRamPageSize();
 			if(pageSize == 0) {
 				#ifdef _DEBUG
-				MessageManager::DisplayMessage("Debug", "Tried to map undefined chr ram.");
+				MessageManager::DisplayMessage("Debug", u8"尝试映射未定义的 CHR RAM。");
 				#endif
 				return;
 			}
@@ -259,7 +259,7 @@ void BaseMapper::SetPpuMemoryMapping(uint16_t startAddr, uint16_t endAddr, uint1
 
 	if((uint16_t)(endAddr - startAddr) >= pageSize) {
 		#ifdef _DEBUG
-		MessageManager::DisplayMessage("Debug", "Tried to map undefined chr - page size too small for selected range.");
+		MessageManager::DisplayMessage("Debug", u8"尝试映射未定义的 CHR - 页面大小对于所选范围太小。");
 		#endif
 
 		uint32_t addr = startAddr;

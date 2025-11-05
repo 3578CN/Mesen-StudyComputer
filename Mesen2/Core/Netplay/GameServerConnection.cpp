@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include <random>
 #include "Netplay/GameServerConnection.h"
 #include "Netplay/HandShakeMessage.h"
@@ -29,7 +29,7 @@ GameServerConnection::GameServerConnection(GameServer* gameServer, Emulator* emu
 
 GameServerConnection::~GameServerConnection()
 {
-	MessageManager::DisplayMessage("NetPlay", "Player disconnected.");
+	MessageManager::DisplayMessage("NetPlay", u8"玩家已断开连接。");
 	_server->UnregisterNetPlayDevice(this);
 }
 
@@ -100,7 +100,7 @@ void GameServerConnection::ProcessHandshakeResponse(HandShakeMessage* message)
 
 			_controllerPort = message->IsSpectator() ? NetplayControllerInfo { GameConnection::SpectatorPort, 0 } : _server->GetFirstFreeControllerPort();
 
-			MessageManager::DisplayMessage("NetPlay", "Player connected.");
+			MessageManager::DisplayMessage("NetPlay", u8"玩家已连接。");
 
 			if(_emu->IsRunning()) {
 				SendGameInformation();
