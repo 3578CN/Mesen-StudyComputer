@@ -3006,6 +3006,9 @@
     <ClInclude Include="Shared\DebugPrint.h">
       <Filter>Shared</Filter>
     </ClInclude>
+    <ClInclude Include="Shared\Video\WindowsTrueTypeFont.h">
+      <Filter>Shared\Video</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shared\Video\RotateFilter.cpp">
@@ -3385,6 +3388,9 @@
     </ClCompile>
     <ClCompile Include="NES\Mappers\StudyComputer\FloppyDriveController.cpp">
       <Filter>NES\Mappers\StudyComputer</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\Video\WindowsTrueTypeFont.cpp">
+      <Filter>Shared\Video</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
