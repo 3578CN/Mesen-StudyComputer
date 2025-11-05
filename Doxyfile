@@ -9,8 +9,8 @@ CREATE_SUBDIRS         = YES
 OUTPUT_LANGUAGE        = Chinese
 
 # 输入源（默认假设仓库内的 Mesen2 源码）
-# 修正：Doxyfile 位于仓库根，INPUT 指向仓库内的 Mesen2 目录
-INPUT                  = Mesen2
+# 同时包含 docs/doxygen 以保证自定义的 MAINPAGE_CN.md 被处理
+INPUT                  = Mesen2 docs/doxygen
 FILE_PATTERNS          = *.c *.cc *.cpp *.cxx *.h *.hh *.hpp *.hxx *.inl *.cs *.lua *.md
 RECURSIVE              = YES
 EXCLUDE_PATTERNS       = */bin/* */obj/* */build/* */thirdparty/* */ThirdParty/*
