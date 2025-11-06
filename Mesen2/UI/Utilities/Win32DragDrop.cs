@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using Mesen.Interop;
 using System.Text;
 
 namespace Mesen.Utilities
@@ -207,55 +208,13 @@ namespace Mesen.Utilities
             if (files.Length == 0) return false;
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return false;
 
-            // 创建 CF_HDROP 的 HGLOBAL
-            IntPtr hGlobal = IntPtr.Zero;
-            try
-            {
-                byte[] hdropBytes = BuildHDropData(files);
-                // 分配可移动内存
-                const uint GMEM_MOVEABLE = 0x0002;
-                const uint GMEM_ZEROINIT = 0x0040;
-                UIntPtr size = (UIntPtr)hdropBytes.Length;
-                hGlobal = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, size);
-                if (hGlobal == IntPtr.Zero) return false;
-                IntPtr ptr = GlobalLock(hGlobal);
-                if (ptr == IntPtr.Zero) { GlobalFree(hGlobal); hGlobal = IntPtr.Zero; return false; }
-                Marshal.Copy(hdropBytes, 0, ptr, hdropBytes.Length);
-                GlobalUnlock(hGlobal);
-
-                // 初始化 OLE
-                int oleInit = OleInitialize(IntPtr.Zero);
-
-                var dataObj = new SimpleDataObject(hGlobal);
-                var dropSrc = new DropSource();
-
-                uint effect;
-                int hr = DRAGDROP_S_CANCEL;
-
-                // 捕获由 IDataObject/GetData 抛出的 COMException（部分接收方会探测不支持的格式并导致此异常
-                // 在没有用户代码捕获的场景下会被调试器标记为 "user-unhandled"）。在此层捕获并将其视为取消拖放，
-                // 可避免调试时中断，同时保持调用方逻辑安全。
-                try {
-                    // 使用数值 1 表示 Copy 效果，避免引用 UI 特定枚举
-                    hr = DoDragDrop(dataObj, dropSrc, 1U, out effect);
-                } catch( System.Runtime.InteropServices.COMException ) {
-                    // 将异常视为拖放被取消或目标不支持请求的格式
-                    hr = DRAGDROP_S_CANCEL;
-                } finally {
-                    // 如果 OleInitialize 返回 S_OK，我们应该调用 OleUninitialize
-                    if (oleInit == S_OK) OleUninitialize();
-                }
-
-                return hr == S_OK || hr == DRAGDROP_S_DROP;
-            }
-            finally
-            {
-                // 注意：STGMEDIUM 的 hGlobal 应由接收方使用后释放，但如果 DoDragDrop 返回，仍需释放分配的内存
-                if (hGlobal != IntPtr.Zero)
-                {
-                    // 等待小幅时间让系统完成使用（通常 DoDragDrop 返回后可以安全释放）
-                    try { GlobalFree(hGlobal); } catch { }
-                }
+            // 将路径用换行符连接后交给本地实现 (避免托管侧创建 IDataObject/IDropSource)
+            string joined = string.Join("\n", files);
+            try {
+                int res = NativeDoDragDropFiles(joined);
+                return res == 1;
+            } catch {
+                return false;
             }
         }
 
@@ -299,5 +258,9 @@ namespace Mesen.Utilities
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern IntPtr GlobalFree(IntPtr hMem);
+
+        // 本地实现的拖放入口，接受以换行分隔的宽字符文件路径（避免托管侧创建 IDataObject/IDropSource）
+        [DllImport("MesenCore.dll", CharSet = CharSet.Unicode, EntryPoint = "DoDragDropFilesNative")]
+        private static extern int NativeDoDragDropFiles([MarshalAs(UnmanagedType.LPWStr)] string filesCsv);
     }
 }
