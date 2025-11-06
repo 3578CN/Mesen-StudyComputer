@@ -172,7 +172,7 @@ void MapperBbk::Reset(bool softReset)
 		SetPpuMemoryMapping(0x2800, 0x2BFF, _mapperRam, BBK_EVRAM_BASE + 0x0800, _mapperRamSize, MemoryAccessType::ReadWrite);
 		SetPpuMemoryMapping(0x2C00, 0x2FFF, _mapperRam, BBK_EVRAM_BASE + 0x0C00, _mapperRamSize, MemoryAccessType::ReadWrite);
 
-		// 初始化 Mapper 内部寄存器/状态（参考 VirtuaNES 的 MapperBBK::Reset）
+		// 初始化 Mapper 内部寄存器/状态
 		// 保证上电/硬复位时各寄存器与队列处于已知状态
 		bMapRam = false;
 		nRegFF14 = 0;
