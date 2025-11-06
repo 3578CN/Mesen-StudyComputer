@@ -44,13 +44,13 @@ namespace Mesen.ViewModels
 			try {
 				using(var client = new HttpClient()) {
 					// 自动更新查询地址。
-					string updateData = await client.GetStringAsync("https://resource.3578.cn/mesen/Services/v1/latestversion.json");
+					string updateData = await client.GetStringAsync("https://cbcdn.cn/mesen/Services/v1/latestversion.json");
 					updateInfo = (UpdateInfo?)JsonSerializer.Deserialize(updateData, typeof(UpdateInfo), MesenSerializerContext.Default);
 
 					if(
 						updateInfo == null ||
 						updateInfo.Files == null ||
-						updateInfo.Files.Where(f => f.DownloadUrl == null || (!f.DownloadUrl.StartsWith("https://resource.3578.cn/") && !f.DownloadUrl.StartsWith("https://github.com/sengbin/"))).Count() > 0
+						updateInfo.Files.Where(f => f.DownloadUrl == null || (!f.DownloadUrl.StartsWith("https://cbcdn.cn/") && !f.DownloadUrl.StartsWith("https://github.com/sengbin/"))).Count() > 0
 					) {
 						return null;
 					}
