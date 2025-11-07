@@ -332,15 +332,13 @@ namespace Mesen.Views
 									double actualDlgWidthDip = dlg.FrameSize?.Width ?? dlg.Width;
 									if(double.IsNaN(actualDlgWidthDip) || actualDlgWidthDip <= 0) actualDlgWidthDip = dlgWidthDip;
 									int actualDlgWidthPx = (int)(actualDlgWidthDip * scale);
-									// 基准偏移：用于在距离计算中加上额外的 12px*scale
-									int baseOffsetPx = (int)(12 * scale);
 									int extraPx = Math.Max(1, (int)Math.Round(12 * scale));
 									bool isAdjustingPosition = false;
 									bool isSnapped = false;
 									Avalonia.PixelPoint snapPosition = new Avalonia.PixelPoint();
 
 									Action syncWithMainPosition = () => {
-										if(mainWnd == null) {
+										if(!isSnapped || mainWnd == null) {
 											return;
 										}
 										double currentScale = 1.0;
@@ -355,35 +353,20 @@ namespace Mesen.Views
 										if(double.IsNaN(widthDip) || widthDip <= 0) widthDip = actualDlgWidthDip;
 										int widthPx = (int)Math.Round(widthDip * currentScale);
 										int magnetThreshold = Math.Max(1, (int)Math.Round(12 * currentScale));
-										int magnetThreshold2 = magnetThreshold * 2; // 二级阈值：24px*scale，用于更宽容的吸附区间
-
-										// 计算当前磁盘窗口右侧坐标（包含基准偏移），用于与主窗口左侧比较
-										int currentDiskRight = dlg.Position.X + widthPx + baseOffsetPx;
-										int gap = mainWnd.Position.X - currentDiskRight; // >=0 表示磁盘窗口在主窗口左侧，gap 为间隙像素数
-
-										// 若主窗口靠近磁盘窗口（gap <= 二级阈值），则触发吸附并对齐到主窗口左侧
-										if(Math.Abs(gap) <= magnetThreshold2) {
-											snapPosition = new Avalonia.PixelPoint(mainWnd.Position.X - widthPx + baseOffsetPx, mainWnd.Position.Y);
-											isSnapped = true;
-											if(dlg.Position != snapPosition) {
-												isAdjustingPosition = true;
-												try {
-													dlg.Position = snapPosition;
-												} finally {
-													isAdjustingPosition = false;
-												}
+										// 吸附时让磁盘窗口的右边与主窗口的左边紧贴（0px 间隙），magnetThreshold 仅作为触发阈值
+										snapPosition = new Avalonia.PixelPoint(mainWnd.Position.X - widthPx, mainWnd.Position.Y);
+										if(dlg.Position != snapPosition) {
+											isAdjustingPosition = true;
+											try {
+												dlg.Position = snapPosition;
+											} finally {
+												isAdjustingPosition = false;
 											}
-											return;
-										}
-
-										// 若之前处于吸附状态但主窗口移动远离（超过二级阈值），则解除吸附
-										if(isSnapped && Math.Abs(gap) > magnetThreshold2) {
-											isSnapped = false;
 										}
 									};
 
-									// 初始吸附位置（基于 controlPosition 计算，并加上基准偏移，作为起始对齐点）
-									snapPosition = new Avalonia.PixelPoint(controlPosition.X - actualDlgWidthPx + baseOffsetPx, controlPosition.Y);
+									// 初始吸附位置（紧贴主窗口左边）
+									snapPosition = new Avalonia.PixelPoint(controlPosition.X - actualDlgWidthPx, controlPosition.Y);
 									isSnapped = true;
 									isAdjustingPosition = true;
 									try {
@@ -407,45 +390,14 @@ namespace Mesen.Views
 											}
 										} catch { currentScale = scale; }
 										int magnetThreshold = Math.Max(1, (int)Math.Round(12 * currentScale));
-										int magnetThreshold2 = magnetThreshold * 2;
 										double widthDip = dlg.FrameSize?.Width ?? actualDlgWidthDip;
 										if(double.IsNaN(widthDip) || widthDip <= 0) widthDip = actualDlgWidthDip;
 										int widthPx = (int)Math.Round(widthDip * currentScale);
 
-										// 如果尝试将磁盘窗口拖入主窗口区域（产生重叠），根据拖入深度决定是否允许移动：
-										// - 若拖入深度 <= 阈值（magnetThreshold），视为未用力拉出，吸附回左侧；
-										// - 若拖入深度 > 阈值，则允许移动（解除吸附），从而可以把窗口移入到主窗口右侧。
-										if(mainWnd != null) {
-											int mainLeftX = mainWnd.Position.X;
-											int attemptedDiskRight = attemptedPosition.X + widthPx + baseOffsetPx;
-											int overlap = attemptedDiskRight - mainLeftX; // 正值表示进入主窗口区域的像素数
-											if(overlap > 0) {
-												// 如果进入范围在一级或二级阈值内，都应当吸住（即 <=24px也吸住）
-												if(overlap <= magnetThreshold2) {
-													// 拖动不足以完全突破吸附（包括 12-24 区间），吸回左侧
-													snapPosition = new Avalonia.PixelPoint(mainLeftX - widthPx + baseOffsetPx, mainWnd.Position.Y);
-													isSnapped = true;
-													isAdjustingPosition = true;
-													try {
-														dlg.Position = snapPosition;
-													} finally {
-														isAdjustingPosition = false;
-													}
-													return;
-												} else {
-													// 拖动力度超过二级阈值，解除吸附并允许移动（可以进入重叠区域）
-													isSnapped = false;
-													// 继续执行，允许用户移动窗口到重叠区域
-												}
-											}
-										}
-
 										if(isSnapped) {
-											// 在比较移动距离时也以基准偏移为参考，避免初始缝隙或缩放误差
-											// 释放吸附需要更大的水平位移（超过二级阈值），垂直位移继续使用一级阈值判断
-											int diffX = Math.Abs((attemptedPosition.X + baseOffsetPx) - snapPosition.X);
-											int diffY = Math.Abs((attemptedPosition.Y) - snapPosition.Y);
-											if(diffX > magnetThreshold2 || diffY > magnetThreshold) {
+											int diffX = Math.Abs(attemptedPosition.X - snapPosition.X);
+											int diffY = Math.Abs(attemptedPosition.Y - snapPosition.Y);
+											if(diffX > magnetThreshold || diffY > magnetThreshold) {
 												isSnapped = false;
 												return;
 											}
@@ -463,13 +415,11 @@ namespace Mesen.Views
 										}
 
 										int mainLeft = mainWnd.Position.X;
-										// 计算磁盘窗口右边（包含基准偏移），用于与主窗口左边比较距离
-										int diskRight = attemptedPosition.X + widthPx + baseOffsetPx;
+										int diskRight = attemptedPosition.X + widthPx;
 										int horizontalGap = mainLeft - diskRight;
-										// 在判断是否要吸附时，基于加上基准偏移后的距离与二级阈值比较（12-24 区间也吸住）
-										if(attemptedPosition.X <= mainLeft && Math.Abs(horizontalGap) <= magnetThreshold2) {
-											// 触发吸附时：将吸附位置也应用基准偏移
-											snapPosition = new Avalonia.PixelPoint(mainLeft - widthPx + baseOffsetPx, mainWnd.Position.Y);
+										if(attemptedPosition.X <= mainLeft && Math.Abs(horizontalGap) <= magnetThreshold) {
+											// 触发吸附时：紧贴主窗口左边
+											snapPosition = new Avalonia.PixelPoint(mainLeft - widthPx, mainWnd.Position.Y);
 											isSnapped = true;
 											isAdjustingPosition = true;
 											try {
