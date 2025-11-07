@@ -414,20 +414,35 @@ namespace Mesen.Windows
                 return;
             }
 
+            string oldShort = GetShortNameCandidate(node.Name);
+            bool oldIsShort = string.Equals(node.Name, oldShort, StringComparison.OrdinalIgnoreCase);
+            string newShort = GetShortNameCandidate(newName);
+            if(oldIsShort && string.Equals(oldShort, newShort, StringComparison.OrdinalIgnoreCase)) {
+                DisplayMessageHelper.DisplayMessage("Error", "重命名失败: 新旧文件名在 8.3 格式下相同。");
+                return;
+            }
+
             byte[]? data = EmuApi.FloppyReadFile(node.Name);
             if(data == null) {
                 DisplayMessageHelper.DisplayMessage("Error", "读取文件失败: " + node.Name);
                 return;
             }
 
-            if(!EmuApi.FloppyWriteFile(newName, data)) {
-                DisplayMessageHelper.DisplayMessage("Error", "写入文件失败: " + newName);
+            if(!EmuApi.FloppyDeleteFile(node.Name)) {
+                DisplayMessageHelper.DisplayMessage("Error", "无法删除旧文件: " + node.Name);
                 return;
             }
 
-            if(!EmuApi.FloppyDeleteFile(node.Name)) {
-                EmuApi.FloppyDeleteFile(newName);
-                DisplayMessageHelper.DisplayMessage("Error", "无法删除旧文件: " + node.Name);
+            if(!EmuApi.FloppyWriteFile(newName, data)) {
+                bool restored = EmuApi.FloppyWriteFile(node.Name, data);
+                if(restored) {
+                    DisplayMessageHelper.DisplayMessage("Error", "重命名失败，新文件写入失败，已恢复原文件。");
+                } else {
+                    DisplayMessageHelper.DisplayMessage("Error", "重命名失败且原文件无法恢复，文件可能已丢失。");
+                }
+                Dispatcher.UIThread.Post(() => {
+                    try { _model?.Refresh(); } catch { }
+                });
                 return;
             }
 
@@ -449,6 +464,63 @@ namespace Mesen.Windows
             } else {
                 DisplayMessageHelper.DisplayMessage("Error", "删除失败: " + node.Name);
             }
+        }
+
+        /// <summary>
+        /// 生成与原生实现一致的 8.3 短文件名表示，用于判定重命名冲突。
+        /// </summary>
+        private static string GetShortNameCandidate(string name)
+        {
+            if(string.IsNullOrEmpty(name)) {
+                return string.Empty;
+            }
+
+            string justName = name;
+            int slash = justName.LastIndexOfAny(new[] { '/', '\\' });
+            if(slash >= 0 && slash < justName.Length - 1) {
+                justName = justName[(slash + 1)..];
+            }
+
+            justName = justName.ToUpperInvariant();
+
+            string basePart = justName;
+            string extPart = string.Empty;
+            int dot = justName.LastIndexOf('.');
+            if(dot > 0 && dot < justName.Length - 1) {
+                basePart = justName.Substring(0, dot);
+                extPart = justName.Substring(dot + 1);
+            }
+
+            static string Sanitize(string input, int maxLen)
+            {
+                if(maxLen <= 0) {
+                    return string.Empty;
+                }
+                char[] buf = new char[Math.Min(maxLen, input.Length)];
+                int c = 0;
+                foreach(char ch in input) {
+                    if(c >= maxLen) {
+                        break;
+                    }
+                    char v = ch;
+                    if(!((v >= 'A' && v <= 'Z') || (v >= '0' && v <= '9'))) {
+                        v = '_';
+                    }
+                    buf[c++] = v;
+                }
+                return c > 0 ? new string(buf, 0, c) : string.Empty;
+            }
+
+            string shortBase = Sanitize(basePart, 8);
+            string shortExt = Sanitize(extPart, 3);
+
+            if(string.IsNullOrEmpty(shortExt)) {
+                return shortBase;
+            }
+            if(string.IsNullOrEmpty(shortBase)) {
+                return shortExt;
+            }
+            return shortBase + "." + shortExt;
         }
 
     private void StartDragForNode(Mesen.ViewModels.DiskDirectoryNode node, Control? source)
