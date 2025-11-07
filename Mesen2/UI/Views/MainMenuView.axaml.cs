@@ -339,7 +339,7 @@ namespace Mesen.Views
 								dlg.Opened -= openedHandler;
 							};
 							dlg.Opened += openedHandler;
-							dlg.Show(mainWnd);
+							dlg.Show();
 							return;
 						} catch { }
 					} catch { }
