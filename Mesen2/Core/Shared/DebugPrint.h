@@ -16,13 +16,13 @@
 DebugPrint("plain message")						-> [Mesen 12:34:56.789][MyClass::MyMethod] plain message
 DebugPrint("Value=%d, name=%s", 42, "foo")	-> [Mesen 12:34:56.789][MyClass::MyMethod] Value=42, name=foo
 DebugPrint("error: %s", "disk full")			->	[Mesen 12:34:56.789][MyClass::MyMethod] error: disk full
-DebugPrint(std::string("hello"))				->	[Mesen 12:34:56.789][MyClass::MyMethod] hello
+DebugPrint(std::string("hello"))					->	[Mesen 12:34:56.789][MyClass::MyMethod] hello
 DebugPrint(true)										->	[Mesen 12:34:56.789][MyClass::MyMethod] true
-DebugPrint(false)									->	[Mesen 12:34:56.789][MyClass::MyMethod] false
+DebugPrint(false)										->	[Mesen 12:34:56.789][MyClass::MyMethod] false
 DebugPrint(123)										->	[Mesen 12:34:56.789][MyClass::MyMethod] 123
 DebugPrint(3.14159)									->	[Mesen 12:34:56.789][MyClass::MyMethod] 3.14159
 DebugPrint(MyEnum::Value)							->	[Mesen 12:34:56.789][MyClass::MyMethod] 0
-DebugPrint(myObj)									->	[Mesen 12:34:56.789][MyClass::MyMethod] <myObj 的 operator<< 输出>
+DebugPrint(myObj)										->	[Mesen 12:34:56.789][MyClass::MyMethod] <myObj 的 operator<< 输出>
 ---------------------------------------------------------------------------------------------------------------------*/
 #pragma once
 
