@@ -42,6 +42,13 @@
                         <TextBlock Grid.Column="2" Text="{Binding SizeText}" VerticalAlignment="Center" HorizontalAlignment="Right" Opacity="0.8" Margin="0,0,2,0" />
                         <TextBlock Grid.Column="4" Text="{Binding ModifiedText}" VerticalAlignment="Center" HorizontalAlignment="Left" Opacity="0.8" Margin="2,0,0,0" />
                     </Grid>
+                    <Button.ContextMenu>
+                        <ContextMenu DataContext="{Binding}">
+                            <MenuItem Header="另存为" Click="OnMenuSaveAsClick" />
+                            <MenuItem Header="重命名" Click="OnMenuRenameClick" />
+                            <MenuItem Header="删除" Click="OnMenuDeleteClick" />
+                        </ContextMenu>
+                    </Button.ContextMenu>
                 </Button>
                 <ItemsControl ItemsSource="{Binding Children}" Margin="0" HorizontalAlignment="Stretch" />
             </StackPanel>

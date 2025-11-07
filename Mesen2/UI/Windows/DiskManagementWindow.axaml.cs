@@ -12,6 +12,7 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Mesen.Windows
 {
@@ -293,18 +294,161 @@ namespace Mesen.Windows
                 if(e.Key == Key.Delete) {
                     var node = _model?.SelectedNode;
                     if(node != null && !node.IsDirectory) {
-                        bool ok = EmuApi.FloppyDeleteFile(node.Name);
-                        if(ok) {
-                            // 删除成功后刷新视图
-                            Dispatcher.UIThread.Post(() => {
-                                try { _model?.Refresh(); } catch { }
-                            });
-                        } else {
-                            DisplayMessageHelper.DisplayMessage("Error", "删除失败: " + node.Name);
-                        }
+                        DeleteNodeAndRefresh(node);
                     }
                 }
             } catch { }
+        }
+
+        private async void OnMenuSaveAsClick(object? sender, RoutedEventArgs e)
+        {
+            try {
+                var node = GetNodeFromSender(sender);
+                if(node == null || node.IsDirectory) {
+                    return;
+                }
+                if(_model != null) {
+                    _model.SelectedNode = node;
+                }
+                await SaveFileAsync(node);
+            } catch { }
+            if(e != null) {
+                e.Handled = true;
+            }
+        }
+
+        private async void OnMenuRenameClick(object? sender, RoutedEventArgs e)
+        {
+            try {
+                var node = GetNodeFromSender(sender);
+                if(node == null || node.IsDirectory) {
+                    return;
+                }
+                if(_model != null) {
+                    _model.SelectedNode = node;
+                }
+                await RenameFileAsync(node);
+            } catch { }
+            if(e != null) {
+                e.Handled = true;
+            }
+        }
+
+        private void OnMenuDeleteClick(object? sender, RoutedEventArgs e)
+        {
+            try {
+                var node = GetNodeFromSender(sender);
+                if(node == null || node.IsDirectory) {
+                    return;
+                }
+                if(_model != null) {
+                    _model.SelectedNode = node;
+                }
+                DeleteNodeAndRefresh(node);
+            } catch { }
+            if(e != null) {
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// 根据菜单事件源解析当前节点。
+        /// </summary>
+        private static Mesen.ViewModels.DiskDirectoryNode? GetNodeFromSender(object? sender)
+        {
+            return (sender as MenuItem)?.DataContext as Mesen.ViewModels.DiskDirectoryNode;
+        }
+
+        /// <summary>
+        /// 将软盘中的文件另存为主机端文件。
+        /// </summary>
+        private async Task SaveFileAsync(Mesen.ViewModels.DiskDirectoryNode node)
+        {
+            byte[]? data = EmuApi.FloppyReadFile(node.Name);
+            if(data == null) {
+                DisplayMessageHelper.DisplayMessage("Error", "读取文件失败: " + node.Name);
+                return;
+            }
+
+            string initialName = Path.GetFileName(node.Name);
+            if(string.IsNullOrWhiteSpace(initialName)) {
+                initialName = node.Name;
+            }
+
+            string extension = "bin";
+            string ext = Path.GetExtension(initialName);
+            if(!string.IsNullOrEmpty(ext)) {
+                string trimmed = ext.TrimStart('.');
+                if(!string.IsNullOrEmpty(trimmed)) {
+                    extension = trimmed;
+                }
+            }
+
+            string? targetPath = await FileDialogHelper.SaveFile(null, initialName, this, extension);
+            if(string.IsNullOrEmpty(targetPath)) {
+                return;
+            }
+
+            try {
+                File.WriteAllBytes(targetPath, data);
+            } catch(Exception ex) {
+                DisplayMessageHelper.DisplayMessage("Error", "写入文件失败: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// 在软盘镜像中对文件执行重命名操作。
+        /// </summary>
+        private async Task RenameFileAsync(Mesen.ViewModels.DiskDirectoryNode node)
+        {
+            string? newName = await RenameDiskFileWindow.ShowDialog(this, node.Name);
+            if(string.IsNullOrWhiteSpace(newName)) {
+                return;
+            }
+            newName = newName.Trim();
+            if(string.Equals(newName, node.Name, StringComparison.OrdinalIgnoreCase)) {
+                return;
+            }
+            if(newName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || newName.Contains('/') || newName.Contains('\\')) {
+                DisplayMessageHelper.DisplayMessage("Error", "文件名无效: " + newName);
+                return;
+            }
+
+            byte[]? data = EmuApi.FloppyReadFile(node.Name);
+            if(data == null) {
+                DisplayMessageHelper.DisplayMessage("Error", "读取文件失败: " + node.Name);
+                return;
+            }
+
+            if(!EmuApi.FloppyWriteFile(newName, data)) {
+                DisplayMessageHelper.DisplayMessage("Error", "写入文件失败: " + newName);
+                return;
+            }
+
+            if(!EmuApi.FloppyDeleteFile(node.Name)) {
+                EmuApi.FloppyDeleteFile(newName);
+                DisplayMessageHelper.DisplayMessage("Error", "无法删除旧文件: " + node.Name);
+                return;
+            }
+
+            Dispatcher.UIThread.Post(() => {
+                try { _model?.Refresh(); } catch { }
+            });
+        }
+
+        /// <summary>
+        /// 删除软盘镜像中的文件并刷新列表。
+        /// </summary>
+        private void DeleteNodeAndRefresh(Mesen.ViewModels.DiskDirectoryNode node)
+        {
+            bool ok = EmuApi.FloppyDeleteFile(node.Name);
+            if(ok) {
+                Dispatcher.UIThread.Post(() => {
+                    try { _model?.Refresh(); } catch { }
+                });
+            } else {
+                DisplayMessageHelper.DisplayMessage("Error", "删除失败: " + node.Name);
+            }
         }
 
     private void StartDragForNode(Mesen.ViewModels.DiskDirectoryNode node, Control? source)

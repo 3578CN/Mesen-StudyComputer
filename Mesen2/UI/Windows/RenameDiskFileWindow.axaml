@@ -1,0 +1,17 @@
+<win:MesenWindow
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:win="using:Mesen.Windows"
+    x:Class="Mesen.Windows.RenameDiskFileWindow"
+    Width="320" Height="150"
+    CanResize="False"
+    Title="重命名文件">
+    <StackPanel Margin="16" Spacing="12">
+        <TextBlock Text="请输入新文件名：" />
+        <TextBox x:Name="txtFileName" MinWidth="240" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Content="确定" Width="72" Click="OnOkClick" />
+            <Button Content="取消" Width="72" Click="OnCancelClick" />
+        </StackPanel>
+    </StackPanel>
+</win:MesenWindow>
