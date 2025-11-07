@@ -311,15 +311,13 @@ namespace Mesen.Views
 							var controlPosition = mainWnd.Position;
 							double scale = 1.0;
 							try {
+								// 直接使用 Avalonia API 获取屏幕缩放，替换原先的反射实现
+								// 在 AOT 环境下反射可能被裁剪或不可用，直接访问更可靠
 								var parentWndBase = mainWnd as Avalonia.Controls.WindowBase;
 								var scr = parentWndBase?.Screens.ScreenFromVisual(parentWndBase);
 								if(scr != null) {
-									var scalingProp = scr.GetType().GetProperty("Scaling");
-									if(scalingProp != null) {
-										var val = scalingProp.GetValue(scr);
-										if(val is double d) scale = d;
-										else if(val is float f) scale = f;
-									}
+									// 直接使用 Screen 的 Scaling 属性（多数 Avalonia 版本支持）
+									scale = scr.Scaling;
 								}
 							} catch { scale = 1.0; }
 							double dlgWidthDip = dlg.FrameSize?.Width ?? dlg.Width;
