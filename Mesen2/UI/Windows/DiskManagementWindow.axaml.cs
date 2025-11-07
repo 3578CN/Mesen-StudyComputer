@@ -134,11 +134,11 @@ namespace Mesen.Windows
                 case ConsoleNotificationType.FloppyIoStopped:
                 case ConsoleNotificationType.FloppyLoaded:
                 case ConsoleNotificationType.FloppyEjected:
-                        // 在 UI 线程上重启去抖定时器：200ms 内合并多次通知为一次刷新
+                        // 在 UI 线程上重启去抖定时器：1000ms 内合并多次通知为一次刷新
                         Dispatcher.UIThread.Post(() => {
                             try {
                                 if(_debounceTimer == null) {
-                                    _debounceTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(200), DispatcherPriority.Normal, (s, args) => {
+                                    _debounceTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(1000), DispatcherPriority.Normal, (s, args) => {
                                         try {
                                             _debounceTimer?.Stop();
                                             _model?.Refresh();

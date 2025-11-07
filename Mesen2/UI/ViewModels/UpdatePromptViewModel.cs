@@ -10,6 +10,7 @@ using System.IO.Compression;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -43,8 +44,11 @@ namespace Mesen.ViewModels
 			UpdateInfo? updateInfo = null;
 			try {
 				using(var client = new HttpClient()) {
-					// 自动更新查询地址。
-					string updateData = await client.GetStringAsync("https://cbcdn.cn/mesen/Services/v1/latestversion.json");
+					// 自动更新查询地址。按字节读取并以 UTF-8 解码，避免因响应头缺失或错误的 charset 导致中文乱码。
+					HttpResponseMessage resp = await client.GetAsync("https://cbcdn.cn/mesen/Services/v1/latestversion.json");
+					resp.EnsureSuccessStatusCode();
+					byte[] jsonBytes = await resp.Content.ReadAsByteArrayAsync();
+					string updateData = Encoding.UTF8.GetString(jsonBytes);
 					updateInfo = (UpdateInfo?)JsonSerializer.Deserialize(updateData, typeof(UpdateInfo), MesenSerializerContext.Default);
 
 					if(
