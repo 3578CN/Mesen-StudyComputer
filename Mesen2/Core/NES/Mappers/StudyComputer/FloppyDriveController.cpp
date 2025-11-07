@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <array>
+#include <ctime>
 #if defined(_MSC_VER)
 #include <share.h>
 #include <io.h>
@@ -268,6 +269,59 @@ static bool WriteFatValue(vector<uint8_t>& fat, uint16_t cluster, uint16_t value
 	fat[index] = (uint8_t)(orig & 0xFF);
 	fat[index + 1] = (uint8_t)((orig >> 8) & 0xFF);
 	return true;
+}
+
+static void SetFatTimestampFields(uint8_t* entry)
+{
+	if(!entry) {
+		return;
+	}
+
+	std::time_t now = std::time(nullptr);
+	std::tm local{};
+#if defined(_MSC_VER)
+	localtime_s(&local, &now);
+#else
+	localtime_r(&now, &local);
+#endif
+
+	int year = local.tm_year + 1900;
+	if(year < 1980) {
+		year = 1980;
+	} else if(year > 2107) {
+		year = 2107;
+	}
+	int month = local.tm_mon + 1;
+	if(month < 1) month = 1;
+	if(month > 12) month = 12;
+	int day = local.tm_mday;
+	if(day < 1) day = 1;
+	if(day > 31) day = 31;
+	int hour = local.tm_hour;
+	if(hour < 0) hour = 0;
+	if(hour > 23) hour = 23;
+	int minute = local.tm_min;
+	if(minute < 0) minute = 0;
+	if(minute > 59) minute = 59;
+	int second = local.tm_sec / 2;
+	if(second < 0) second = 0;
+	if(second > 29) second = 29;
+
+	uint16_t fatTime = (uint16_t)((hour << 11) | (minute << 5) | second);
+	uint16_t fatDate = (uint16_t)(((year - 1980) << 9) | (month << 5) | day);
+
+	entry[22] = (uint8_t)(fatTime & 0xFF);
+	entry[23] = (uint8_t)((fatTime >> 8) & 0xFF);
+	entry[24] = (uint8_t)(fatDate & 0xFF);
+	entry[25] = (uint8_t)((fatDate >> 8) & 0xFF);
+
+	entry[14] = entry[22];
+	entry[15] = entry[23];
+	entry[16] = entry[24];
+	entry[17] = entry[25];
+	entry[18] = entry[24];
+	entry[19] = entry[25];
+	entry[13] = 0;
 }
 
 static bool ReadClusterChain(FILE* file, const Fat12Context& ctx, const vector<uint8_t>& fat, uint16_t startCluster, vector<uint8_t>& outData)
@@ -1531,6 +1585,7 @@ int FloppyDriveController::AddFileFromBuffer(const char* filename, const unsigne
 	entry[29] = (uint8_t)((length >> 8) & 0xFF);
 	entry[30] = (uint8_t)((length >> 16) & 0xFF);
 	entry[31] = (uint8_t)((length >> 24) & 0xFF);
+	SetFatTimestampFields(entry);
 
 	memcpy(rootBuffer.data() + freeEntryIndex * 32, entry, 32);
 
