@@ -311,133 +311,30 @@ namespace Mesen.Views
 							var controlPosition = mainWnd.Position;
 							double scale = 1.0;
 							try {
-								// 直接使用 Avalonia API 获取屏幕缩放，替换原先的反射实现
-								// 在 AOT 环境下反射可能被裁剪或不可用，直接访问更可靠
 								var parentWndBase = mainWnd as Avalonia.Controls.WindowBase;
 								var scr = parentWndBase?.Screens.ScreenFromVisual(parentWndBase);
 								if(scr != null) {
-									// 直接使用 Screen 的 Scaling 属性（多数 Avalonia 版本支持）
-									scale = scr.Scaling;
+									var scalingProp = scr.GetType().GetProperty("Scaling");
+									if(scalingProp != null) {
+										var val = scalingProp.GetValue(scr);
+										if(val is double d) scale = d;
+										else if(val is float f) scale = f;
+									}
 								}
 							} catch { scale = 1.0; }
 							double dlgWidthDip = dlg.FrameSize?.Width ?? dlg.Width;
 							if(double.IsNaN(dlgWidthDip) || dlgWidthDip <= 0) dlgWidthDip = 300;
 							int dlgWidthPx = (int)(dlgWidthDip * scale);
-							var startPosition = new Avalonia.PixelPoint(controlPosition.X - dlgWidthPx + (int)(12 * scale), controlPosition.Y);
+							var startPosition = new Avalonia.PixelPoint(controlPosition.X - dlgWidthPx, controlPosition.Y);
 							dlg.WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.Manual;
-							dlg.Position = startPosition;
 							EventHandler? openedHandler = null;
 							openedHandler = (s2, e2) => {
 								try {
 									double actualDlgWidthDip = dlg.FrameSize?.Width ?? dlg.Width;
 									if(double.IsNaN(actualDlgWidthDip) || actualDlgWidthDip <= 0) actualDlgWidthDip = dlgWidthDip;
 									int actualDlgWidthPx = (int)(actualDlgWidthDip * scale);
-									int extraPx = Math.Max(1, (int)Math.Round(12 * scale));
-									bool isAdjustingPosition = false;
-									bool isSnapped = false;
-									Avalonia.PixelPoint snapPosition = new Avalonia.PixelPoint();
-
-									Action syncWithMainPosition = () => {
-										if(!isSnapped || mainWnd == null) {
-											return;
-										}
-										double currentScale = 1.0;
-										try {
-											var parentWndBase2 = mainWnd as Avalonia.Controls.WindowBase;
-											var scr2 = parentWndBase2?.Screens.ScreenFromVisual(parentWndBase2);
-											if(scr2 != null) {
-												currentScale = scr2.Scaling;
-											}
-										} catch { currentScale = scale; }
-										double widthDip = dlg.FrameSize?.Width ?? actualDlgWidthDip;
-										if(double.IsNaN(widthDip) || widthDip <= 0) widthDip = actualDlgWidthDip;
-										int widthPx = (int)Math.Round(widthDip * currentScale);
-										int magnetThreshold = Math.Max(1, (int)Math.Round(12 * currentScale));
-										// 吸附时让磁盘窗口的右边与主窗口的左边紧贴（0px 间隙），magnetThreshold 仅作为触发阈值
-										snapPosition = new Avalonia.PixelPoint(mainWnd.Position.X - widthPx, mainWnd.Position.Y);
-										if(dlg.Position != snapPosition) {
-											isAdjustingPosition = true;
-											try {
-												dlg.Position = snapPosition;
-											} finally {
-												isAdjustingPosition = false;
-											}
-										}
-									};
-
-									// 初始吸附位置（紧贴主窗口左边）
-									snapPosition = new Avalonia.PixelPoint(controlPosition.X - actualDlgWidthPx, controlPosition.Y);
-									isSnapped = true;
-									isAdjustingPosition = true;
-									try {
-										dlg.Position = snapPosition;
-									} finally {
-										isAdjustingPosition = false;
-									}
-
-									// 直接订阅 PositionChanged 事件（内联 lambda），使用 dlg.Position 获取当前位置
-									dlg.PositionChanged += (s3, e3) => {
-										if(isAdjustingPosition) {
-											return;
-										}
-										var attemptedPosition = dlg.Position;
-										double currentScale = 1.0;
-										try {
-											var parentWndBase2 = mainWnd as Avalonia.Controls.WindowBase;
-											var scr2 = parentWndBase2?.Screens.ScreenFromVisual(parentWndBase2);
-											if(scr2 != null) {
-												currentScale = scr2.Scaling;
-											}
-										} catch { currentScale = scale; }
-										int magnetThreshold = Math.Max(1, (int)Math.Round(12 * currentScale));
-										double widthDip = dlg.FrameSize?.Width ?? actualDlgWidthDip;
-										if(double.IsNaN(widthDip) || widthDip <= 0) widthDip = actualDlgWidthDip;
-										int widthPx = (int)Math.Round(widthDip * currentScale);
-
-										if(isSnapped) {
-											int diffX = Math.Abs(attemptedPosition.X - snapPosition.X);
-											int diffY = Math.Abs(attemptedPosition.Y - snapPosition.Y);
-											if(diffX > magnetThreshold || diffY > magnetThreshold) {
-												isSnapped = false;
-												return;
-											}
-											isAdjustingPosition = true;
-											try {
-												dlg.Position = snapPosition;
-											} finally {
-												isAdjustingPosition = false;
-											}
-											return;
-										}
-
-										if(mainWnd == null) {
-											return;
-										}
-
-										int mainLeft = mainWnd.Position.X;
-										int diskRight = attemptedPosition.X + widthPx;
-										int horizontalGap = mainLeft - diskRight;
-										if(attemptedPosition.X <= mainLeft && Math.Abs(horizontalGap) <= magnetThreshold) {
-											// 触发吸附时：紧贴主窗口左边
-											snapPosition = new Avalonia.PixelPoint(mainLeft - widthPx, mainWnd.Position.Y);
-											isSnapped = true;
-											isAdjustingPosition = true;
-											try {
-												dlg.Position = snapPosition;
-											} finally {
-												isAdjustingPosition = false;
-											}
-										}
-									};
-
-									if(mainWnd != null) {
-										mainWnd.PositionChanged += (s3, e3) => {
-											syncWithMainPosition();
-										};
-									}
-
-									// 不在此处移除事件（磁盘管理窗口以唯一窗口方式创建，重复打开不会重复注册）
-									syncWithMainPosition();
+									int extraPx = (int)(12 * scale);
+									dlg.Position = new Avalonia.PixelPoint(controlPosition.X - actualDlgWidthPx + extraPx, controlPosition.Y);
 								} catch { }
 								dlg.Opened -= openedHandler;
 							};
