@@ -32,6 +32,9 @@ namespace Mesen.Windows
     private Avalonia.Point? _dragStartPos;
     private Mesen.ViewModels.DiskDirectoryNode? _dragNode;
     private Avalonia.Controls.Control? _dragSourceControl;
+    // 标记当前是否在执行由窗口内部发起的系统拖放（临时文件在 %TEMP%\\Mesen_Drag）
+    // 用于在 Drop 事件中区分外部文件与内部拖放，避免内部拖放导致把临时文件写回镜像（自覆盖）。
+    private bool _internalDragInProgress = false;
 
         // 窗口级代理属性：将列宽的读写代理到 ViewModel，供 XAML 绑定使用
         public double ColumnNameWidth {
@@ -166,6 +169,23 @@ namespace Mesen.Windows
             try {
                 var paths = files.Select(f => f.Path.LocalPath).Where(p => !string.IsNullOrEmpty(p)).ToArray();
                 if(paths.Length == 0) return;
+
+                // 若当前正在进行由窗口内部发起的系统拖放（我们在 StartDragForNode 中创建的临时文件），
+                // 并且所有被放下的文件都位于我们的临时拖放目录下，则视为内部拖放并忽略，
+                // 以避免把临时拖出文件再次写回镜像（即“自己覆盖自己”）。
+                try {
+                    string tempRoot = Path.Combine(Path.GetTempPath(), "Mesen_Drag");
+                    bool allInternal = _internalDragInProgress && paths.All(p => {
+                        try {
+                            var fp = Path.GetFullPath(p);
+                            return fp.StartsWith(tempRoot, StringComparison.OrdinalIgnoreCase);
+                        } catch { return false; }
+                    });
+                    if(allInternal) {
+                        // 忽略内部拖放造成的 Drop
+                        return;
+                    }
+                } catch { }
 
                 foreach(var path in paths) {
                     if(!File.Exists(path)) {
@@ -312,9 +332,15 @@ namespace Mesen.Windows
 
                     // 使用 Windows OLE 启动系统级拖放，使得外部目标（如资源管理器）能够接收文件并在鼠标释放时完成复制。
                     // DoDragDropFiles 将在拖放结束（放下或取消）后返回，因此可在返回后删除整个临时目录，保证临时文件在拖放期间可用并且目标文件名为原始名。
-                    bool started = Win32DragDrop.DoDragDropFiles(new[] { tmpPath });
-                    if(!started) {
-                        DisplayMessageHelper.DisplayMessage("Info", "拖放未成功启动或被取消。");
+                    // 标记这是由窗口内部发起的系统拖放，OnDrop 中将根据该标记和临时目录判断是否忽略以避免“自覆盖”。
+                    _internalDragInProgress = true;
+                    try {
+                        bool started = Win32DragDrop.DoDragDropFiles(new[] { tmpPath });
+                        if(!started) {
+                            DisplayMessageHelper.DisplayMessage("Info", "拖放未成功启动或被取消。");
+                        }
+                    } finally {
+                        _internalDragInProgress = false;
                     }
                 } finally {
                     // 尝试删除临时目录（可能因目标移动文件或锁定而失败），忽略异常
