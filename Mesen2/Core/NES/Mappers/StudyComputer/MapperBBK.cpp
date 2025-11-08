@@ -19,6 +19,9 @@
 #include "NES/Mappers/StudyComputer/Lpc_D6.h"
 #include "Shared/BaseControlManager.h"
 #include "NES/Mappers/A12Watcher.h"
+#include <chrono>
+#include <algorithm>
+#include <limits>
 
 // 将 EVRAM（PPU Nametable）整合到 BaseMapper 提供的 _mapperRam 的高位段中。
 // EDRAM 原始大小为 512KB，EVRAM 为 32KB。EVRAM 放在 _mapperRam 的偏移位置：
@@ -650,8 +653,9 @@ void MapperBbk::ProcessCpuClock()
 		_lpcCycleAccumulator -= _lpcCyclesPerSample;
 		int16_t sample = PopLpcSample();
 		if(sample != _lpcLastMixedSample) {
-			int16_t delta = sample - _lpcLastMixedSample;
-			apu->AddExpansionAudioDelta(AudioChannel::BbkLpc, delta);
+			int32_t delta = static_cast<int32_t>(sample) - static_cast<int32_t>(_lpcLastMixedSample);
+			delta = std::clamp(delta, static_cast<int32_t>(std::numeric_limits<int16_t>::min()), static_cast<int32_t>(std::numeric_limits<int16_t>::max()));
+			apu->AddExpansionAudioDelta(AudioChannel::BbkLpc, static_cast<int16_t>(delta));
 			_lpcLastMixedSample = sample;
 		}
 	}
@@ -700,17 +704,36 @@ void MapperBbk::LpcThreadRoutine()
 
 		if(pcmSize > 0) {
 			for(int i = 0; i < pcmSize; i++) {
-				std::unique_lock<std::mutex> pcmLock(_pcmMutex);
-				_pcmCond.wait(pcmLock, [this]() {
-					return !_lpcThreadRunning || _lpcStopRequested || _lpcPcmQueue.size() < LpcPcmMaxSize;
-				});
+				int32_t rawSample = pcmBuffer[i];
+				rawSample /= 16; // 缩放振幅，匹配混音范围
+				rawSample = std::clamp(rawSample, -2047, 2047);
+				bool queued = false;
+				while(!queued) {
+					bool shouldStop = false;
+					{
+						std::unique_lock<std::mutex> stateLock(_lpcMutex);
+						shouldStop = !_lpcThreadRunning || _lpcStopRequested || _lpcResetRequested;
+					}
+					if(shouldStop) {
+						queued = true;
+						break;
+					}
+					{
+						std::lock_guard<std::mutex> pcmLock(_pcmMutex);
+						if(_lpcPcmQueue.size() < LpcPcmMaxSize) {
+							_lpcPcmQueue.push_back(static_cast<int16_t>(rawSample));
+							queued = true;
+						}
+					}
+					if(!queued) {
+						std::this_thread::sleep_for(std::chrono::milliseconds(1));
+					}
+				}
 				if(!_lpcThreadRunning || _lpcStopRequested) {
 					break;
 				}
-				_lpcPcmQueue.push_back(pcmBuffer[i]);
-				pcmLock.unlock();
-				_pcmCond.notify_all();
 			}
+			_pcmCond.notify_all();
 		}
 
 		bool needReset = false;
@@ -896,7 +919,10 @@ void MapperBbk::EnqueueLpcByte(uint8_t value)
 	}
 
 	while(_lpcDataCount >= LpcDataBufferSize && !_lpcStopRequested) {
-		_lpcCond.wait(lock);
+		if(_lpcResetRequested) {
+			return;
+		}
+		_lpcCond.wait_for(lock, std::chrono::milliseconds(1));
 	}
 
 	if(_lpcStopRequested) {
