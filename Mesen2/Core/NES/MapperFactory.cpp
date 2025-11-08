@@ -445,9 +445,10 @@ BaseMapper* MapperFactory::GetMapperFromID(RomData& romData)
 		case 168: return new Racermate();
 		case 170: return new Mapper170();
 		case 171:
-			switch(romData.Info.SubMapperID) {
-				case 1: return new MapperBbk();
-				case 2: return new MapperSb2k();
+			switch(romData.Info.Hash.PrgCrc32) {
+				case 3016825404u: 									// bbk10
+				case 2358241280u: return new MapperBbk();		// bbk20
+				case 3766211267u: return new MapperSb2k();	// sb2k
 				default: return new Kaiser7058();
 			}
 		case 172: return new Txc22211B();
