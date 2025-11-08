@@ -705,8 +705,7 @@ void MapperBbk::LpcThreadRoutine()
 		if(pcmSize > 0) {
 			for(int i = 0; i < pcmSize; i++) {
 				int32_t rawSample = pcmBuffer[i];
-				rawSample /= 16; // 缩放振幅，匹配混音范围
-				rawSample = std::clamp(rawSample, -2047, 2047);
+				rawSample /= 4; // 缩放到与 VirtuaNES 相近的幅度，避免混音端过载
 				bool queued = false;
 				while(!queued) {
 					bool shouldStop = false;

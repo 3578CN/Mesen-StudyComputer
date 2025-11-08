@@ -187,7 +187,7 @@ int16_t NesSoundMixer::GetOutputVolume(bool forRightChannel)
 		GetChannelOutput(AudioChannel::MMC5, forRightChannel) * 43 +
 		GetChannelOutput(AudioChannel::Namco163, forRightChannel) * 20 +
 		GetChannelOutput(AudioChannel::Sunsoft5B, forRightChannel) * 15 +
-		GetChannelOutput(AudioChannel::BbkLpc, forRightChannel) * 20 +
+		GetChannelOutput(AudioChannel::BbkLpc, forRightChannel) +
 		GetChannelOutput(AudioChannel::VRC6, forRightChannel) * 5 +
 		GetChannelOutput(AudioChannel::VRC7, forRightChannel));
 }
