@@ -192,6 +192,7 @@ enum class ControllerType
 	PowerPadSideA,
 	PowerPadSideB,
 	SuborMouse,
+	BbkFd1,
 	VirtualBoyController,
 
 	//NES/Famicon expansion devices

@@ -112,7 +112,22 @@ protected:
 		}
 
 		// 鼠标：使用 KeyManager 的鼠标移动量
-		SetMovement(KeyManager::GetMouseMovement(_emu, _emu->GetSettings()->GetInputConfig().MouseSensitivity));
+		MouseMovement mov = KeyManager::GetMouseMovement(_emu, _emu->GetSettings()->GetInputConfig().MouseSensitivity);
+		_mouseDeltaX += mov.dx;
+		_mouseDeltaY += mov.dy;
+		SetMovement(mov);
+
+		int mouseButtons = 0;
+		if(KeyManager::IsMouseButtonPressed(MouseButton::LeftButton)) {
+			mouseButtons |= 0x01;
+		}
+		if(KeyManager::IsMouseButtonPressed(MouseButton::RightButton)) {
+			mouseButtons |= 0x02;
+		}
+		if(KeyManager::IsMouseButtonPressed(MouseButton::MiddleButton)) {
+			mouseButtons |= 0x08;
+		}
+		_mouseKey = mouseButtons;
 	}
 
 	void Serialize(Serializer& s) override
@@ -135,7 +150,7 @@ protected:
 	}
 
 public:
-	BbkFd1(Emulator* emu) : BaseControlDevice(emu, ControllerType::None, BaseControlDevice::MapperInputPort)
+	BbkFd1(Emulator* emu) : BaseControlDevice(emu, ControllerType::BbkFd1, BaseControlDevice::MapperInputPort)
 	{
 	}
 

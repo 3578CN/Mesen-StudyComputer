@@ -362,6 +362,7 @@ namespace Mesen.Config
 		PowerPadSideA,
 		PowerPadSideB,
 		SuborMouse,
+		BbkFd1,
 		VbController,
 
 		//NES/Famicon expansion devices
