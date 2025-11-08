@@ -41,6 +41,10 @@ namespace Mesen.Utilities
 		private bool _mouseCaptured = false;
 		private bool _closeMenuPending = false;
 		private DateTime _lastMouseMove = DateTime.Now;
+		private bool _prevRightButton = false;
+		private DateTime _lastRightClickTime = DateTime.MinValue;
+		private static readonly TimeSpan _rightClickReleaseInterval = TimeSpan.FromMilliseconds(300);
+		private bool _suspendCapture = false;
 
 		public MouseManager(MainWindow wnd, Control renderer, MainMenuView mainMenu, bool usesSoftwareRenderer)
 		{
@@ -131,9 +135,24 @@ namespace Mesen.Utilities
 				InputApi.SetKeyState(MouseButton4KeyCode, mouseState.Button4);
 				InputApi.SetKeyState(MouseButton5KeyCode, mouseState.Button5);
 
-				if(!_mouseCaptured && AllowMouseCapture && buttonPressed) {
+				bool rightButtonPressed = mouseState.RightButton;
+				if(rightButtonPressed && !_prevRightButton) {
+					DateTime now = DateTime.Now;
+					if(_mouseCaptured && now - _lastRightClickTime <= _rightClickReleaseInterval) {
+						ReleaseMouse();
+						SetMouseCursor(CursorImage.Arrow);
+						_suspendCapture = true;
+					}
+					_lastRightClickTime = now;
+				}
+				_prevRightButton = rightButtonPressed;
+
+				if(!_mouseCaptured && AllowMouseCapture && buttonPressed && !_suspendCapture) {
 					//If the mouse button is clicked and mouse isn't captured but can be, turn on mouse capture
 					CaptureMouse();
+				}
+				if(!buttonPressed) {
+					_suspendCapture = false;
 				}
 
 				if(_mouseCaptured) {
