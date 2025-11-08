@@ -137,7 +137,7 @@ uint32_t EmuSettings::GetVersion()
 	// 设置版本号。
 	uint16_t major = 1;
 	uint8_t minor = 0;
-	uint8_t revision = 1;
+	uint8_t revision = 2;
 	return (major << 16) | (minor << 8) | revision;
 }
 
