@@ -991,7 +991,10 @@ void MapperBbk::NotifyVramAddressChange(uint16_t addr)
 	uint32_t frameCycle = _console->GetPpu()->GetFrameCycle();
 	if(_a12Watcher.UpdateVramAddress(addr, _console->GetPpu()->GetFrameCycle()) == A12StateChange::Rise) {
 		int curScanline = int(frameCycle / 341) - 1;
-		if(0 == curScanline && bSplitMode) {
+		// 说明：在每帧的第0条扫描线开始时就切页；
+		// A12 上升沿发生在扫描线后段（约 dot 260），若在第0线再切页会晚一线，导致最顶端1px闪烁。
+		// 因此将“帧起始切页”提前到预渲染线（-1）发生的 A12 上升沿，确保进入第0线之前已完成切页。
+		if(-1 == curScanline && bSplitMode) {
 			uint8_t page;
 
 			nQIndex = 0;
@@ -1007,8 +1010,10 @@ void MapperBbk::NotifyVramAddressChange(uint16_t addr)
 
 			nQIndex++;
 		}
-
-		if(curScanline >= 240)
+        
+		// 仅在可见区域内处理 IRQ/计数逻辑，避免预渲染线(-1)产生越界的+1偏移
+		bool visibleScanline = (curScanline >= 0 && curScanline < 240);
+		if(!visibleScanline)
 			return;
 
 		CheckIRQ();
