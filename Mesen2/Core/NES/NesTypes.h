@@ -458,7 +458,8 @@ enum class AudioChannel
 	VRC6 = 7,
 	VRC7 = 8,
 	Namco163 = 9,
-	Sunsoft5B = 10
+	Sunsoft5B = 10,
+	BbkLpc = 11
 };
 
 struct NesState

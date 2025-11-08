@@ -9,6 +9,11 @@
 #pragma once
 
 #include "pch.h"
+#include <array>
+#include <deque>
+#include <mutex>
+#include <condition_variable>
+#include <thread>
 #include "NES/BaseMapper.h"
 #include "NES/Mappers/StudyComputer/Bbk_Fd1.h"
 // A12 事件监视器，用于检测 PPU VRAM 地址的 A12 上升沿
@@ -18,6 +23,7 @@ class MapperBbk final : public BaseMapper
 {
 public:
 	void Reset(bool softReset) override;
+	~MapperBbk() override;
 
 protected:
 	uint16_t GetPrgPageSize() override { return 0x8000; }
@@ -28,6 +34,7 @@ protected:
 	uint32_t GetMapperRamSize() override { return (512 + 32) * 1024; }
 
 	void InitMapper() override;
+	bool EnableCpuClockHook() override { return true; }
 
 	bool AllowLowReadWrite() override { return true; }
 	void WriteLow(uint16_t addr, uint8_t value) override;
@@ -36,6 +43,7 @@ protected:
 	bool AllowRegisterRead() override { return true; };
 	void WriteRegister(uint16_t addr, uint8_t value) override;
 	uint8_t ReadRegister(uint16_t addr) override;
+	void ProcessCpuClock() override;
 
 	// 使能 VRAM 地址钩子，以便接收 PPU 地址变化（A12 事件）
 	bool EnableVramAddressHook() override { return true; }
@@ -90,4 +98,43 @@ protected:
 
 	// Mapper 所属的 BBK FD1 输入设备（作为 Mapper 附属的输入设备）
 	std::shared_ptr<BbkFd1> _bbkInput;
+
+	// LPC 解码线程处理
+	static int LpcFeed(void* host, unsigned char* food);
+	void LpcThreadRoutine();
+	void InitializeLpcAudio();
+	void ShutdownLpcAudio();
+	void ResetLpcAudioState();
+	void UpdateLpcSampleStep();
+	int16_t PopLpcSample();
+	void EnqueueLpcByte(uint8_t value);
+
+	static constexpr uint32_t LpcSampleRate = 10000;
+	static constexpr size_t LpcDataBufferSize = 16;
+	static constexpr size_t LpcPcmMaxSize = 4096;
+
+	std::array<uint8_t, LpcDataBufferSize> _lpcDataBuffer = {};
+	size_t _lpcDataReadPos = 0;
+	size_t _lpcDataWritePos = 0;
+	size_t _lpcDataCount = 0;
+
+	std::mutex _lpcMutex;
+	std::condition_variable _lpcCond;
+	std::condition_variable _lpcAckCond;
+	bool _lpcThreadRunning = false;
+	bool _lpcStopRequested = false;
+	bool _lpcResetRequested = false;
+	bool _lpcResetAck = false;
+
+	void* _lpcSynth = nullptr;
+	std::thread _lpcThread;
+
+	std::mutex _pcmMutex;
+	std::condition_variable _pcmCond;
+	std::deque<int16_t> _lpcPcmQueue;
+	int16_t _lpcLastSample = 0;
+	int16_t _lpcLastMixedSample = 0;
+	double _lpcCycleAccumulator = 0.0;
+	double _lpcCyclesPerSample = 1.0;
+	ConsoleRegion _lpcCachedRegion = ConsoleRegion::Auto;
 };

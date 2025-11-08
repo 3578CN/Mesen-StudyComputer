@@ -21,7 +21,7 @@ public:
 private:
 	static constexpr uint32_t MaxSampleRate = 96000;
 	static constexpr uint32_t MaxSamplesPerFrame = MaxSampleRate / 60 * 4 * 2; //x4 to allow CPU overclocking up to 10x, x2 for panning stereo
-	static constexpr uint32_t MaxChannelCount = 11;
+	static constexpr uint32_t MaxChannelCount = 12;
 
 	NesConsole* _console = nullptr;
 	SoundMixer* _mixer = nullptr;

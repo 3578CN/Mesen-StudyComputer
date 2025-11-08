@@ -12,8 +12,11 @@
 #include "NES/BaseNesPpu.h"
 #include "NES/NesCpu.h"
 #include "NES/NesMemoryManager.h"
+#include "NES/APU/NesApu.h"
+#include "NES/NesConstants.h"
 #include "NES/Mappers/StudyComputer/FloppyDriveController.h"
 #include "NES/Mappers/StudyComputer/Bbk_Fd1.h"
+#include "NES/Mappers/StudyComputer/Lpc_D6.h"
 #include "Shared/BaseControlManager.h"
 #include "NES/Mappers/A12Watcher.h"
 
@@ -139,6 +142,14 @@ void MapperBbk::InitMapper()
 		}
 		_bbkInput->SetKeyMappings(mappings);
 	}
+
+	InitializeLpcAudio();
+	ResetLpcAudioState();
+}
+
+MapperBbk::~MapperBbk()
+{
+	ShutdownLpcAudio();
 }
 
 // 描述：重置 Mapper 状态并更新映射表。
@@ -198,6 +209,8 @@ void MapperBbk::Reset(bool softReset)
 		bDiskAccess = false;
 
 	}
+
+	ResetLpcAudioState();
 }
 
 // 描述：将 CPU 地址映射到物理 EDRAM/BIOS/IO 地址。
@@ -531,13 +544,14 @@ void MapperBbk::WriteRegister(uint16_t addr, uint8_t value)
 		case 0xFF5B: value &= 0x1F; SetPpuMemoryMapping(0x1C00, 0x1FFF, _mapperRam, BBK_EVRAM_BASE + value * 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite); break;
 
 		case 0xFF10: // SoundPort0/SpeakInitPort
-			if(0 == nRegSPInt && (value & 1)) {
+			if((nRegSPInt & 1) == 0 && (value & 1)) {
+				ResetLpcAudioState();
 			}
 			nRegSPInt = value & 1;
 			break;
 
-		case 0xFF18: // SoundPort1/SpeakDataPort - no LPC queue in this port, 简化实现
-			// 如果实现了扬声器缓冲可在此写入。这里忽略。
+		case 0xFF18: // SoundPort1/SpeakDataPort
+			EnqueueLpcByte(value);
 			break;
 
 		case 0xFF40: // PCDaCtPortO/PCCDataPort
@@ -605,11 +619,296 @@ uint8_t MapperBbk::ReadRegister(uint16_t addr)
 		case 0xFF50:
 			return 0; // PC Card
 		case 0xFF18:
-			return 0;
+		{
+			std::unique_lock<std::mutex> lock(_lpcMutex);
+			bool bufferFull = _lpcThreadRunning && _lpcDataCount >= (LpcDataBufferSize - 1);
+			return bufferFull ? 0x00 : 0x8F;
+		}
 		default:
 			break;
 	}
 	return 0;
+}
+
+void MapperBbk::ProcessCpuClock()
+{
+	BaseProcessCpuClock();
+
+	ConsoleRegion currentRegion = _console->GetRegion();
+	if(currentRegion != _lpcCachedRegion) {
+		_lpcCachedRegion = currentRegion;
+		UpdateLpcSampleStep();
+	}
+
+	NesApu* apu = _console->GetApu();
+	if(!_lpcThreadRunning || !_lpcSynth || !apu) {
+		return;
+	}
+
+	_lpcCycleAccumulator += 1.0;
+	while(_lpcCycleAccumulator >= _lpcCyclesPerSample) {
+		_lpcCycleAccumulator -= _lpcCyclesPerSample;
+		int16_t sample = PopLpcSample();
+		if(sample != _lpcLastMixedSample) {
+			int16_t delta = sample - _lpcLastMixedSample;
+			apu->AddExpansionAudioDelta(AudioChannel::BbkLpc, delta);
+			_lpcLastMixedSample = sample;
+		}
+	}
+}
+
+int MapperBbk::LpcFeed(void* host, unsigned char* food)
+{
+	MapperBbk* self = reinterpret_cast<MapperBbk*>(host);
+	std::unique_lock<std::mutex> lock(self->_lpcMutex);
+	while(true) {
+		if(!self->_lpcThreadRunning || self->_lpcStopRequested) {
+			return LPC_CMD_STOP;
+		}
+
+		if(self->_lpcResetRequested) {
+			return LPC_CMD_RESET;
+		}
+
+		if(self->_lpcDataCount > 0) {
+			uint8_t value = self->_lpcDataBuffer[self->_lpcDataReadPos];
+			self->_lpcDataReadPos = (self->_lpcDataReadPos + 1) % LpcDataBufferSize;
+			self->_lpcDataCount--;
+			lock.unlock();
+			self->_lpcCond.notify_all();
+			*food = value;
+			return LPC_CMD_PAYLOAD;
+		}
+
+		self->_lpcCond.wait(lock);
+	}
+}
+
+void MapperBbk::LpcThreadRoutine()
+{
+	std::array<int16_t, 1024> pcmBuffer = {};
+	while(true) {
+		{
+			std::unique_lock<std::mutex> lock(_lpcMutex);
+			if(!_lpcThreadRunning || _lpcStopRequested || !_lpcSynth) {
+				break;
+			}
+		}
+
+		int pcmSize = 0;
+		int eos = lpc_d6_do(_lpcSynth, pcmBuffer.data(), &pcmSize, nullptr);
+
+		if(pcmSize > 0) {
+			for(int i = 0; i < pcmSize; i++) {
+				std::unique_lock<std::mutex> pcmLock(_pcmMutex);
+				_pcmCond.wait(pcmLock, [this]() {
+					return !_lpcThreadRunning || _lpcStopRequested || _lpcPcmQueue.size() < LpcPcmMaxSize;
+				});
+				if(!_lpcThreadRunning || _lpcStopRequested) {
+					break;
+				}
+				_lpcPcmQueue.push_back(pcmBuffer[i]);
+				pcmLock.unlock();
+				_pcmCond.notify_all();
+			}
+		}
+
+		bool needReset = false;
+		{
+			std::unique_lock<std::mutex> lock(_lpcMutex);
+			needReset = _lpcResetRequested;
+			if(_lpcStopRequested) {
+				break;
+			}
+		}
+
+		if(needReset && _lpcSynth) {
+			lpc_d6_reset(_lpcSynth);
+			std::unique_lock<std::mutex> lock(_lpcMutex);
+			_lpcResetAck = true;
+			_lpcResetRequested = false;
+			lock.unlock();
+			_lpcAckCond.notify_all();
+		}
+
+		if(eos) {
+			std::this_thread::yield();
+		}
+	}
+
+	{
+		std::lock_guard<std::mutex> pcmLock(_pcmMutex);
+		_lpcPcmQueue.clear();
+	}
+	{
+		std::unique_lock<std::mutex> lock(_lpcMutex);
+		_lpcThreadRunning = false;
+	}
+	_pcmCond.notify_all();
+	_lpcCond.notify_all();
+	_lpcAckCond.notify_all();
+}
+
+void MapperBbk::InitializeLpcAudio()
+{
+	std::unique_lock<std::mutex> lock(_lpcMutex);
+	if(_lpcThreadRunning) {
+		return;
+	}
+
+	_lpcCachedRegion = _console->GetRegion();
+	UpdateLpcSampleStep();
+	_lpcStopRequested = false;
+	_lpcResetRequested = false;
+	_lpcResetAck = false;
+
+	_lpcSynth = lpc_d6_new(LpcFeed, this, LPC_STD_VARIANT_BBK);
+	if(!_lpcSynth) {
+		return;
+	}
+
+	_lpcThreadRunning = true;
+	try {
+		_lpcThread = std::thread(&MapperBbk::LpcThreadRoutine, this);
+	} catch(...) {
+		_lpcThreadRunning = false;
+		lpc_d6_delete(_lpcSynth);
+		_lpcSynth = nullptr;
+		throw;
+	}
+}
+
+void MapperBbk::ShutdownLpcAudio()
+{
+	std::thread worker;
+	{
+		std::unique_lock<std::mutex> lock(_lpcMutex);
+		if(!_lpcThreadRunning) {
+			if(_lpcSynth) {
+				lpc_d6_delete(_lpcSynth);
+				_lpcSynth = nullptr;
+			}
+			return;
+		}
+		_lpcStopRequested = true;
+		_lpcCond.notify_all();
+		worker = std::move(_lpcThread);
+	}
+	_pcmCond.notify_all();
+
+	if(worker.joinable()) {
+		worker.join();
+	}
+
+	if(_lpcSynth) {
+		lpc_d6_delete(_lpcSynth);
+		_lpcSynth = nullptr;
+	}
+
+	{
+		std::lock_guard<std::mutex> pcmLock(_pcmMutex);
+		_lpcPcmQueue.clear();
+	}
+	{
+		std::unique_lock<std::mutex> lock(_lpcMutex);
+		_lpcThreadRunning = false;
+		_lpcStopRequested = false;
+		_lpcResetRequested = false;
+		_lpcResetAck = false;
+	}
+	_lpcCond.notify_all();
+	_lpcAckCond.notify_all();
+	_pcmCond.notify_all();
+}
+
+void MapperBbk::ResetLpcAudioState()
+{
+	_lpcCachedRegion = _console->GetRegion();
+	UpdateLpcSampleStep();
+
+	{
+		std::lock_guard<std::mutex> pcmLock(_pcmMutex);
+		_lpcPcmQueue.clear();
+	}
+	_lpcLastSample = 0;
+	_lpcLastMixedSample = 0;
+	_lpcCycleAccumulator = 0.0;
+
+	std::unique_lock<std::mutex> lock(_lpcMutex);
+	_lpcDataReadPos = 0;
+	_lpcDataWritePos = 0;
+	_lpcDataCount = 0;
+
+	if(_lpcThreadRunning && !_lpcStopRequested) {
+		_lpcResetRequested = true;
+		_lpcResetAck = false;
+		lock.unlock();
+		_lpcCond.notify_all();
+		lock.lock();
+		_lpcAckCond.wait(lock, [this]() {
+			return !_lpcThreadRunning || _lpcResetAck || _lpcStopRequested;
+		});
+		_lpcResetRequested = false;
+		_lpcResetAck = false;
+	} else {
+		_lpcResetRequested = false;
+		_lpcResetAck = false;
+	}
+
+	lock.unlock();
+	_lpcCond.notify_all();
+	_pcmCond.notify_all();
+}
+
+void MapperBbk::UpdateLpcSampleStep()
+{
+	double clockRate = static_cast<double>(NesConstants::GetClockRate(_console->GetRegion()));
+	_lpcCyclesPerSample = clockRate / static_cast<double>(LpcSampleRate);
+	if(_lpcCyclesPerSample <= 0.0) {
+		_lpcCyclesPerSample = 1.0;
+	}
+}
+
+int16_t MapperBbk::PopLpcSample()
+{
+	int16_t sample = _lpcLastSample;
+	bool popped = false;
+	{
+		std::lock_guard<std::mutex> lock(_pcmMutex);
+		if(!_lpcPcmQueue.empty()) {
+			sample = _lpcPcmQueue.front();
+			_lpcPcmQueue.pop_front();
+			_lpcLastSample = sample;
+			popped = true;
+		}
+	}
+	if(popped) {
+		_pcmCond.notify_all();
+	}
+	return sample;
+}
+
+void MapperBbk::EnqueueLpcByte(uint8_t value)
+{
+	std::unique_lock<std::mutex> lock(_lpcMutex);
+	if(!_lpcThreadRunning || !_lpcSynth || _lpcStopRequested) {
+		return;
+	}
+
+	while(_lpcDataCount >= LpcDataBufferSize && !_lpcStopRequested) {
+		_lpcCond.wait(lock);
+	}
+
+	if(_lpcStopRequested) {
+		return;
+	}
+
+	_lpcDataBuffer[_lpcDataWritePos] = value;
+	_lpcDataWritePos = (_lpcDataWritePos + 1) % LpcDataBufferSize;
+	_lpcDataCount++;
+
+	lock.unlock();
+	_lpcCond.notify_all();
 }
 
 // 描述：检查并触发/清除 Mapper IRQ。

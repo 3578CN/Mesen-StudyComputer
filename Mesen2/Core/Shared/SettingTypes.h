@@ -675,9 +675,9 @@ struct NesConfig
 	bool IsFullColorPalette = false;
 	uint32_t UserPalette[512] = { };
 
-	uint32_t ChannelVolumes[11] = {};
+	uint32_t ChannelVolumes[12] = {};
 	uint32_t EpsmVolume = 100;
-	uint32_t ChannelPanning[11] = {};
+	uint32_t ChannelPanning[12] = {};
 
 	StereoFilterType StereoFilter = StereoFilterType::None;
 	int32_t StereoDelay = 0;
