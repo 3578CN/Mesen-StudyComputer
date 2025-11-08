@@ -547,10 +547,11 @@ void MapperBbk::WriteRegister(uint16_t addr, uint8_t value)
 		case 0xFF5B: value &= 0x1F; SetPpuMemoryMapping(0x1C00, 0x1FFF, _mapperRam, BBK_EVRAM_BASE + value * 0x0400, _mapperRamSize, MemoryAccessType::ReadWrite); break;
 
 		case 0xFF10: // SoundPort0/SpeakInitPort
-			if((nRegSPInt & 1) == 0 && (value & 1)) {
-				ResetLpcAudioState();
-			}
-			nRegSPInt = value & 1;
+				// 仅当从 0->1 边沿时请求解码器复位；不清空已积累的 PCM 队列，避免语音被截断
+				if((nRegSPInt & 1) == 0 && (value & 1)) {
+					RequestLpcDecoderReset();
+				}
+				nRegSPInt = value & 1; // 保存当前启动位
 			break;
 
 		case 0xFF18: // SoundPort1/SpeakDataPort
@@ -880,6 +881,28 @@ void MapperBbk::ResetLpcAudioState()
 	lock.unlock();
 	_lpcCond.notify_all();
 	_pcmCond.notify_all();
+}
+
+// 描述：仅复位 LPC 解码器内部状态，不丢弃已经排队等待混音的 PCM 样本。
+// 说明：模拟 VirtuaNES 行为，避免在一段语音中途因 0xFF10 上升沿导致剩余样本被清空造成“跳句”。
+void MapperBbk::RequestLpcDecoderReset()
+{
+	std::unique_lock<std::mutex> lock(_lpcMutex);
+	if(!_lpcThreadRunning || !_lpcSynth || _lpcStopRequested) {
+		return; // 线程未运行或已停止，忽略
+	}
+
+	// 标记复位请求，让解码线程在安全点调用 lpc_d6_reset。
+	_lpcResetRequested = true;
+	_lpcResetAck = false;
+	lock.unlock();
+	_lpcCond.notify_all();
+	lock.lock();
+	_lpcAckCond.wait(lock, [this]() {
+		return !_lpcThreadRunning || _lpcResetAck || _lpcStopRequested; });
+	// 清除标志（线程已置位 _lpcResetAck）。
+	_lpcResetRequested = false;
+	_lpcResetAck = false;
 }
 
 void MapperBbk::UpdateLpcSampleStep()

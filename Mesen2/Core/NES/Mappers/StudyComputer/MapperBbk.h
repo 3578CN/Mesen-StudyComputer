@@ -105,6 +105,9 @@ protected:
 	void InitializeLpcAudio();
 	void ShutdownLpcAudio();
 	void ResetLpcAudioState();
+	/// 描述：仅请求重置 LPC 解码器，不清空 PCM 队列与输入缓冲，避免语音被截断。
+	/// 说明：对应 VirtuaNES 在 0xFF10 上升沿仅复位解码器的行为，保持已生成样本继续播放。
+	void RequestLpcDecoderReset();
 	void UpdateLpcSampleStep();
 	int16_t PopLpcSample();
 	void EnqueueLpcByte(uint8_t value);
