@@ -918,14 +918,11 @@ void MapperBbk::EnqueueLpcByte(uint8_t value)
 		return;
 	}
 
-	while(_lpcDataCount >= LpcDataBufferSize && !_lpcStopRequested) {
-		if(_lpcResetRequested) {
-			return;
-		}
-		_lpcCond.wait_for(lock, std::chrono::milliseconds(1));
-	}
+	_lpcCond.wait(lock, [this]() {
+		return _lpcStopRequested || !_lpcThreadRunning || (!_lpcResetRequested && _lpcDataCount < LpcDataBufferSize);
+	});
 
-	if(_lpcStopRequested) {
+	if(_lpcStopRequested || !_lpcThreadRunning) {
 		return;
 	}
 
