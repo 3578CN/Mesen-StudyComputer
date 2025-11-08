@@ -140,12 +140,15 @@ namespace Mesen.Views
 			try {
 				var floppyLed = this.GetControl<Border>("FloppyLed");
 				// 定义根据主题生成刷子的函数（便于在主题变化时重新计算）
-				Func<SolidColorBrush> makeActiveBrush = () => new SolidColorBrush(Color.Parse("#FF0B8B50"));
-				Func<SolidColorBrush> makeIdleBrush = () => new SolidColorBrush(Color.Parse("#FFDDDDDD"));
-				Func<SolidColorBrush> makeActiveBorderBrush = () => new SolidColorBrush(Color.Parse("#FF07583F"));
+				// 使用更接近真实软驱 LED 的亮绿色（纯绿），在深色/亮色主题下均可辨识
+				Func<SolidColorBrush> makeActiveBrush = () => new SolidColorBrush(Color.Parse("#FF00FF00"));
+				// 未点亮时使用暗绿以模拟真实软驱 LED 的不发光外观（而不是灰色）
+				Func<SolidColorBrush> makeIdleBrush = () => new SolidColorBrush(Color.Parse("#FF0B5A0B"));
+				// 边框使用较深的绿色以增加对比度
+				Func<SolidColorBrush> makeActiveBorderBrush = () => new SolidColorBrush(Color.Parse("#FF007F00"));
 				Func<SolidColorBrush> makeIdleBorderBrush = () => (ConfigManager.ActiveTheme == MesenTheme.Dark)
-					? new SolidColorBrush(Color.Parse("#FF1F1F1F")) // 暗色主题：更深的边框
-					: new SolidColorBrush(Color.Parse("#FFC0C0C0")); // 亮色主题：更浅的边框
+					? new SolidColorBrush(Color.Parse("#FF033003")) // 暗色主题：深暗绿
+					: new SolidColorBrush(Color.Parse("#FF8FBF8F")); // 亮色主题：柔和的浅绿边框
 
 				// 初始刷子
 				var activeBrush = makeActiveBrush();
