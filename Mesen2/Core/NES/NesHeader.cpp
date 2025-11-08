@@ -180,7 +180,11 @@ int32_t NesHeader::GetSaveChrRamSize()
 
 uint8_t NesHeader::GetSubMapper()
 {
+	if(GetRomHeaderVersion() == RomHeaderVersion::Nes2_0) {
 	return (Byte8 & 0xF0) >> 4;
+	} else {
+		return 0;
+	}
 }
 
 MirroringType NesHeader::GetMirroringType()

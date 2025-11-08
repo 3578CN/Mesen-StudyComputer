@@ -51,7 +51,7 @@ public class NesHeaderEditViewModel : DisposableViewModel
 		Header = NesHeader.FromBytes(headerBytes);
 
 		AddDisposable(this.WhenAnyValue(x => x.Header.SaveRam, x => x.Header.ChrRamBattery).Subscribe(x => {
-			IsBatteryCheckboxEnabled = Header.SaveRam == MemorySizes.None && Header.ChrRamBattery == MemorySizes.None;
+			IsBatteryCheckboxEnabled = Header.SaveRam == MemorySizes.None  && Header.ChrRamBattery == MemorySizes.None;
 			if(!IsBatteryCheckboxEnabled) {
 				Header.HasBattery = true;
 			}
@@ -76,6 +76,7 @@ public class NesHeaderEditViewModel : DisposableViewModel
 				AvailableSystemTypes = new Enum[] { TvSystem.NesFamicomDendy, TvSystem.VsSystem, TvSystem.Playchoice };
 				AvailableTimings = new Enum[] { FrameTiming.Ntsc, FrameTiming.Pal, FrameTiming.NtscAndPal };
 
+				Header.SubmapperId = 0;
 				Header.ChrRam = MemorySizes.None;
 				Header.ChrRamBattery = MemorySizes.None;
 				Header.SaveRam = MemorySizes.None;
@@ -280,7 +281,7 @@ public class NesHeaderEditViewModel : DisposableViewModel
 					(byte)(System == TvSystem.VsSystem ? 0x01 : 0x00) | (System == TvSystem.Playchoice ? 0x02 : 0x00)
 				);
 
-				header[8] = (byte)(((SubmapperId & 0x0F) << 4) | ((MapperId & 0xF00) >> 8));
+				header[8] = 0;
 				header[9] = (byte)(Timing == FrameTiming.Pal ? 0x01 : 0x00);
 				header[10] = 0;
 				header[11] = 0;
@@ -477,7 +478,11 @@ public class NesHeaderEditViewModel : DisposableViewModel
 
 		public int GetSubMapper()
 		{
+			if(GetRomHeaderVersion() == RomHeaderVersion.Nes2_0) {
 			return (_bytes[8] & 0xF0) >> 4;
+			} else {
+				return 0;
+			}
 		}
 
 		public iNesMirroringType GetMirroringType()

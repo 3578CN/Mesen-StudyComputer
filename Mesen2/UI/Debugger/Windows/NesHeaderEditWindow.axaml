@@ -63,7 +63,7 @@
 			<c:MesenNumericTextBox Value="{Binding Header.MapperId}" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" />
 			
 			<TextBlock Text="{l:Translate lblSubmapper}" Grid.Row="2" />
-			<c:MesenNumericTextBox Value="{Binding Header.SubmapperId}" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Left" />
+			<c:MesenNumericTextBox Value="{Binding Header.SubmapperId}" IsEnabled="{Binding IsNes20}" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Left" />
 			
 			<TextBlock Text="{l:Translate lblMirroringType}" Grid.Row="3" />
 			<c:EnumComboBox SelectedItem="{Binding Header.Mirroring}" Grid.Row="3" Grid.Column="1" />
