@@ -8,6 +8,7 @@
 #include "Shared/Audio/SoundMixer.h"
 #include "Utilities/Serializer.h"
 #include "Utilities/Audio/blip_buf.h"
+#include <cmath>
 
 NesSoundMixer::NesSoundMixer(NesConsole* console)
 {
@@ -174,15 +175,14 @@ double NesSoundMixer::GetChannelOutput(AudioChannel channel, bool forRightChanne
 	}
 }
 
-int16_t NesSoundMixer::GetOutputVolume(bool forRightChannel)
+int32_t NesSoundMixer::GetOutputVolume(bool forRightChannel)
 {
 	double squareOutput = GetChannelOutput(AudioChannel::Square1, forRightChannel) + GetChannelOutput(AudioChannel::Square2, forRightChannel);
 	double tndOutput = GetChannelOutput(AudioChannel::DMC, forRightChannel) + 2.7516713261 * GetChannelOutput(AudioChannel::Triangle, forRightChannel) + 1.8493587125 * GetChannelOutput(AudioChannel::Noise, forRightChannel);
 
 	uint16_t squareVolume = (uint16_t)((95.88*5000.0) / (8128.0 / squareOutput + 100.0));
 	uint16_t tndVolume = (uint16_t)((159.79*5000.0) / (22638.0 / tndOutput + 100.0));
-
-	return (int16_t)(squareVolume + tndVolume +
+	int32_t combined = (int32_t)(squareVolume + tndVolume +
 		GetChannelOutput(AudioChannel::FDS, forRightChannel) * 20 +
 		GetChannelOutput(AudioChannel::MMC5, forRightChannel) * 43 +
 		GetChannelOutput(AudioChannel::Namco163, forRightChannel) * 20 +
@@ -190,6 +190,8 @@ int16_t NesSoundMixer::GetOutputVolume(bool forRightChannel)
 		GetChannelOutput(AudioChannel::BbkLpc, forRightChannel) +
 		GetChannelOutput(AudioChannel::VRC6, forRightChannel) * 5 +
 		GetChannelOutput(AudioChannel::VRC7, forRightChannel));
+
+	return combined;
 }
 void NesSoundMixer::AddDelta(AudioChannel channel, uint32_t time, int16_t delta)
 {
@@ -210,14 +212,16 @@ void NesSoundMixer::EndFrame(uint32_t time)
 			_currentOutput[j] += _channelOutput[j][stamp];
 		}
 
-		int16_t currentOutput = GetOutputVolume(false) * 4;
-		blip_add_delta(_blipBufLeft, stamp, (int)(currentOutput - _previousOutputLeft));
+		int32_t currentOutput = (int32_t)std::lround(GetOutputVolume(false) * 4.0);
+		int deltaL = (int)(currentOutput - _previousOutputLeft);
+		blip_add_delta(_blipBufLeft, stamp, deltaL);
 		_previousOutputLeft = currentOutput;
 
 		if(_hasPanning) {
-			currentOutput = GetOutputVolume(true) * 4;
-			blip_add_delta(_blipBufRight, stamp, (int)(currentOutput - _previousOutputRight));
-			_previousOutputRight = currentOutput;
+			int32_t currentOutputR = (int32_t)std::lround(GetOutputVolume(true) * 4.0);
+			int deltaR = (int)(currentOutputR - _previousOutputRight);
+			blip_add_delta(_blipBufRight, stamp, deltaR);
+			_previousOutputRight = currentOutputR;
 		}
 	}
 

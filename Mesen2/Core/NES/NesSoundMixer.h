@@ -30,12 +30,12 @@ private:
 	StereoDelayFilter _stereoDelay;
 	StereoCombFilter _stereoCombFilter;
 
-	int16_t _previousOutputLeft = 0;
-	int16_t _previousOutputRight = 0;
+	int32_t _previousOutputLeft = 0;
+	int32_t _previousOutputRight = 0;
 
 	vector<uint32_t> _timestamps;
-	int16_t _channelOutput[MaxChannelCount][CycleLength] = {};
-	int16_t _currentOutput[MaxChannelCount] = {};
+	int32_t _channelOutput[MaxChannelCount][CycleLength] = {};
+	int32_t _currentOutput[MaxChannelCount] = {};
 
 	blip_t* _blipBufLeft = nullptr;
 	blip_t* _blipBufRight = nullptr;
@@ -50,7 +50,7 @@ private:
 	bool _hasPanning = false;
 
 	__forceinline double GetChannelOutput(AudioChannel channel, bool forRightChannel);
-	__forceinline int16_t GetOutputVolume(bool forRightChannel);
+	__forceinline int32_t GetOutputVolume(bool forRightChannel);
 	void EndFrame(uint32_t time);
 
 	void ProcessVsDualSystemAudio();
