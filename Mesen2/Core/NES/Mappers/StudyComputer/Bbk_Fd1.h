@@ -118,14 +118,14 @@ protected:
 		SetMovement(mov);
 
 		int mouseButtons = 0;
-		if(KeyManager::IsMouseButtonPressed(MouseButton::LeftButton)) {
+		if(KeyManager::IsMouseButtonPressed(MouseButton::RightButton)) {
 			mouseButtons |= 0x01;
 		}
-		if(KeyManager::IsMouseButtonPressed(MouseButton::RightButton)) {
+		if(KeyManager::IsMouseButtonPressed(MouseButton::MiddleButton)) {
 			mouseButtons |= 0x02;
 		}
-		if(KeyManager::IsMouseButtonPressed(MouseButton::MiddleButton)) {
-			mouseButtons |= 0x08;
+		if(KeyManager::IsMouseButtonPressed(MouseButton::LeftButton)) {
+			mouseButtons |= 0x04;
 		}
 		_mouseKey = mouseButtons;
 	}
