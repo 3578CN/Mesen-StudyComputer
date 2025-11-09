@@ -29,15 +29,15 @@ namespace Mesen.Windows
 			BuildDate = EmuApi.GetMesenBuildDate();
 			RuntimeVersion = ".NET " + Environment.Version;
 			RuntimeVersion += RuntimeFeature.IsDynamicCodeSupported ? " (JIT)" : " (AOT)";
-			
+
 			string? commitHash = UpdateHelper.GetCommitHash();
 			BuildSha = commitHash ?? "";
 			BuildShortSha = commitHash?.Substring(0, 7) ?? "";
 
 			AcknowledgeList = new List<AboutListEntry>() {
-				new("轻舞飘揚", "", "QQ：123223194", ""),
-				new("钳工", "", "QQ：87430545", ""),
-				new("惊风", "", "QQ：39237780", ""),
+				new("轻舞飘揚", "QQ：123223194", ""),
+				new("钳工", "QQ：87430545", ""),
+				new("惊风", "QQ：39237780", ""),
 			};
 			AcknowledgeList.Sort((a, b) => a.Name.CompareTo(b.Name));
 
@@ -74,19 +74,10 @@ namespace Mesen.Windows
 		}
 	}
 
-	public class AboutListEntry
+	public class AboutListEntry(string name, string note, string url)
 	{
-		public AboutListEntry(string name, string author, string note, string url)
-		{
-			Name = name;
-			Author = author;
-			Note = note;
-			Url = url;
-		}
-
-		public string Name { get; set; } = "";
-		public string Author { get; set; } = "";
-		public string Note { get; set; } = "";
-		public string Url { get; set; } = "";
+		public string Name { get; set; } = name;
+		public string Note { get; set; } = note;
+		public string Url { get; set; } = url;
 	}
 }
