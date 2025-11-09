@@ -849,7 +849,7 @@
 
 			<Control ID="grpAcknowledgements">致谢</Control>
 			<Control ID="lblAcknowledgeList">感谢以下人员/项目的直接或间接帮助：</Control>
-			<Control ID="lblUsedSoftware">Mesen 使用以下开源软件：</Control>
+			<Control ID="lblSoftwareDocumentation">本软件由 Lion 维护、更新。&#x0a;如果有功能的需求通过下面的方法联系：&#x0a;chengbin@3578.cn</Control>
 			<Control ID="lblSpecialThanks">同时感谢所有以任何方式做出贡献的人！</Control>
 
 			<Control ID="btnOk">确定</Control>

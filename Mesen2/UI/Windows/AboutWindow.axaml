@@ -103,15 +103,8 @@
 						/>
 					</Border>
 					<TextBlock Text="{l:Translate lblSpecialThanks}" Margin="0 5 0 5" TextWrapping="Wrap" />
-					<TextBlock Text="{l:Translate lblUsedSoftware}" Margin="0 15 0 5" />
+					<TextBlock Text="{l:Translate lblSoftwareDocumentation}" Margin="0 15 0 5" TextWrapping="Wrap" />
 				</StackPanel>
-
-				<Border BorderBrush="Gray" BorderThickness="1">
-					<ListBox
-						ItemsSource="{Binding LibraryList, ElementName=root}"
-						Background="Transparent"
-					/>
-				</Border>
 			</DockPanel>
 		</c:GroupBox>
 		
