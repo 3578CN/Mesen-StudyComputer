@@ -2,38 +2,30 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build",
-            "command": "dotnet",
-            "type": "process",
+            "label": "build-all",
+            "dependsOn": ["build-core", "build-ui"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "build-core",
+            "type": "shell",
+            "command": "msbuild",
             "args": [
-                "build",
-                "${workspaceFolder}/Mesen2/Mesen.sln",
-                "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary;ForceNoAlign"
+                "${workspaceFolder}/Mesen2/Core/Core.vcxproj",
+                "/p:Configuration=Debug"
             ],
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "publish",
-            "command": "dotnet",
-            "type": "process",
+            "label": "build-ui",
+            "type": "shell",
+            "command": "msbuild",
             "args": [
-                "publish",
-                "${workspaceFolder}/Mesen2/Mesen.sln",
-                "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary;ForceNoAlign"
-            ],
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "watch",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "watch",
-                "run",
-                "--project",
-                "${workspaceFolder}/Mesen2/Mesen.sln"
+                "${workspaceFolder}/Mesen2/UI/UI.vcxproj",
+                "/p:Configuration=Debug"
             ],
             "problemMatcher": "$msCompile"
         }

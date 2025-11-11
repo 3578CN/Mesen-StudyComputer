@@ -8,17 +8,12 @@
             "name": ".NET Core Launch (console)",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
-            "program": "D:/GitCode/Mesen(Github)/Mesen2/bin/win-x64/Debug/Mesen.dll",
+          //  "preLaunchTask": "build-all",
+            "program": "D:/GitCode/Mesen-Github/Mesen2/bin/win-x64/Debug/Mesen.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Mesen2/UI",
             "console": "internalConsole",
             "stopAtEntry": false
         },
-        {
-            "name": ".NET Core Attach",
-            "type": "coreclr",
-            "request": "attach"
-        }
     ]
 }
