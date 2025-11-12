@@ -573,10 +573,10 @@
     <ClInclude Include="NES\Input\NesController.h" />
     <ClInclude Include="NES\APU\TriangleChannel.h" />
     <ClInclude Include="Shared\TimingInfo.h" />
-  <ClInclude Include="Shared\Video\RotateFilter.h" />
-  <ClInclude Include="Shared\Video\ScanlineFilter.h" />
-  <ClInclude Include="Shared\Video\SystemHud.h" />
-  <ClInclude Include="Shared\Video\WindowsTrueTypeFont.h" />
+    <ClInclude Include="Shared\Video\RotateFilter.h" />
+    <ClInclude Include="Shared\Video\ScanlineFilter.h" />
+    <ClInclude Include="Shared\Video\SystemHud.h" />
+    <ClInclude Include="Shared\Video\WindowsTrueTypeFont.h" />
     <ClInclude Include="SNES\Debugger\SnesCodeDataLogger.h" />
     <ClInclude Include="SNES\AluMulDiv.h" />
     <ClInclude Include="SNES\Debugger\SnesPpuTools.h" />
@@ -944,8 +944,8 @@
     <ClCompile Include="Shared\CdReader.cpp" />
     <ClCompile Include="Shared\DebuggerRequest.cpp" />
     <ClCompile Include="Shared\HistoryViewer.cpp" />
-  <ClCompile Include="Shared\Video\DrawStringCommand.cpp" />
-  <ClCompile Include="Shared\Video\WindowsTrueTypeFont.cpp" />
+    <ClCompile Include="Shared\Video\DrawStringCommand.cpp" />
+    <ClCompile Include="Shared\Video\WindowsTrueTypeFont.cpp" />
     <ClCompile Include="Shared\Video\RotateFilter.cpp" />
     <ClCompile Include="Shared\Video\SoftwareRenderer.cpp" />
     <ClCompile Include="Shared\Video\SystemHud.cpp" />
@@ -1139,27 +1139,27 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PGO Profile|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PGO Optimize|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
