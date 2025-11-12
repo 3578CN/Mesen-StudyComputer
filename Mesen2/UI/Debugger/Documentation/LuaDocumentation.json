@@ -3,466 +3,466 @@
 	"name": "addCheat",
 	"category": "Miscellaneous",
 	"subcategory": "Cheats",
-	"description": "Adds the specified cheat code.\n\nNote: Cheat codes added via this function are not permanent and not visible in the UI.",
+ 	"description": "添加指定的作弊代码。\n\n注意：通过此函数添加的作弊代码不是永久性的，且不会在 UI 中显示。",
 	"parameters": [
-		{ "name": "cheatType", "type": "Enum", "enumName": "cheatType", "description": "Cheat type/format" },
-		{ "name": "cheatCode", "type": "String", "description": "Cheat code" }
+		{ "name": "cheatType", "type": "Enum", "enumName": "cheatType", "description": "作弊类型/格式" },
+		{ "name": "cheatCode", "type": "String", "description": "作弊代码" }
 	]
 },
 {
 	"name": "addEventCallback",
 	"category": "Callbacks",
-	"description": "Registers a callback function to be called whenever the specified event occurs.\nThe callback function receives 1 parameter (\"cpuType\") which is an enum value (emu.cpuType) which indicates which CPU triggered the event (useful to distinguish between identical events triggered by different CPUs, e.g Super Game Boy).",
+ 	"description": "注册一个回调函数，在指定事件发生时调用。\n回调函数接收 1 个参数（\"cpuType\"），该参数是一个枚举值（emu.cpuType），用于指示哪个 CPU 触发了该事件（在多 CPU 情况下区分触发源，例如 Super Game Boy）。",
 	"parameters": [
-		{ "name": "callback", "type": "Function", "description": "Lua function to call when the event occurs" },
-		{ "name": "eventType", "type": "Enum", "enumName": "eventType", "description": "Event type" }
+		{ "name": "callback", "type": "Function", "description": "事件发生时调用的 Lua 函数" },
+		{ "name": "eventType", "type": "Enum", "enumName": "eventType", "description": "事件类型" }
 	],
-	"returnValue": { "type": "Int", "description": "Value that can be used to remove the callback by calling emu.removeEventCallback()." }
+	"returnValue": { "type": "Int", "description": "可用于通过调用 emu.removeEventCallback() 来移除该回调的返回值。" }
 },
 {
 	"name": "addMemoryCallback",
 	"category": "Callbacks",
-	"description": "Registers a callback function to be called whenever the specified event occurs.\nThe callback function receives 2 parameters (\"address\" and \"value\") that correspond to the address being written to or read from, and the value that is being read/written.\n\nFor reads, the callback is called after the read is performed.\nFor writes, the callback is called before the write is performed.\n\nIf the callback returns an integer value, it will replace the value - you can alter the results of read/write operation by using this.",
+ 	"description": "注册一个回调函数，在指定的内存事件发生时调用。\n回调函数接收 2 个参数（\"address\" 和 \"value\"），分别对应被读取或写入的地址及其值。\n\n对于读取操作，回调在读取完成后被调用。\n对于写入操作，回调在写入执行前被调用。\n\n如果回调返回一个整数值，该值将替换原始值——可以通过此方式修改读/写操作的结果。",
 	"parameters": [
-		{ "name": "callback", "type": "Function", "description": "Lua function to call when the event occurs" },
-		{ "name": "callbackType", "type": "Enum", "enumName": "callbackType", "description": "Callback type" },
-		{ "name": "startAddress", "type": "Int", "description": "Start of the address range" },
-		{ "name": "endAddress", "type": "Int", "description": "End of the address range", "defaultValue": "start address" },
-		{ "name": "cpuType", "type": "Enum", "enumName": "cpuType", "description": "CPU used for the callback", "defaultValue": "main CPU" },
-		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "Memory type for the callback", "defaultValue": "main CPU memory" }
+		{ "name": "callback", "type": "Function", "description": "事件发生时调用的 Lua 函数" },
+		{ "name": "callbackType", "type": "Enum", "enumName": "callbackType", "description": "回调类型" },
+		{ "name": "startAddress", "type": "Int", "description": "地址范围起始" },
+		{ "name": "endAddress", "type": "Int", "description": "地址范围结束", "defaultValue": "start address" },
+		{ "name": "cpuType", "type": "Enum", "enumName": "cpuType", "description": "用于回调的 CPU", "defaultValue": "main CPU" },
+		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "回调使用的内存类型", "defaultValue": "main CPU memory" }
 	],
-	"returnValue": { "type": "Int", "description": "Value that can be used to remove the callback by calling emu.removeMemoryCallback()." }
+	"returnValue": { "type": "Int", "description": "可用于通过调用 emu.removeMemoryCallback() 来移除该回调的返回值。" }
 },
 {
 	"name": "breakExecution",
 	"category": "Emulation",
-	"description": "Breaks the execution."
+ 	"description": "中断执行。"
 },
 {
 	"name": "clearCheats",
 	"category": "Miscellaneous",
 	"subcategory": "Cheats",
-	"description": "Removes all active cheat codes.\n\nNote: This has no impact on cheat codes saved in the UI, but it will disable them temporarily."
+ 	"description": "移除所有激活的作弊代码。\n\n注意：这不会影响保存在 UI 中的作弊代码，但会暂时禁用它们。"
 },
 {
 	"name": "clearScreen",
 	"category": "Drawing",
-	"description": "Removes all drawn shapes from the screen."
+ 	"description": "从屏幕上移除所有绘制的形状。"
 },
 {
 	"name": "convertAddress",
 	"category": "MemoryAccess",
-	"description": "Converts an address between CPU addressing mode and ROM/RAM addressing mode.\nWhen a ROM/RAM address is given, a CPU address matching that value is returned, if the address is mapped.\nWhen a CPU address is given, the corresponding ROM/RAM address is returned, if the address is mapped to ROM/RAM.",
+ 	"description": "在 CPU 地址模式与 ROM/RAM 地址模式之间转换地址。\n当输入为 ROM/RAM 地址且该地址被映射时，将返回匹配的 CPU 地址。\n当输入为 CPU 地址且该地址映射到 ROM/RAM 时，将返回对应的 ROM/RAM 地址。",
 	"parameters": [
-		{ "name": "address", "type": "Int", "description": "Address to convert" },
-		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "Memory type", "defaultValue": "main CPU memory" },
-		{ "name": "cpuType", "type": "Enum", "enumName": "cpuType", "description": "CPU used for the conversion", "defaultValue": "main CPU" }
+		{ "name": "address", "type": "Int", "description": "要转换的地址" },
+		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "内存类型", "defaultValue": "main CPU memory" },
+		{ "name": "cpuType", "type": "Enum", "enumName": "cpuType", "description": "用于转换的 CPU", "defaultValue": "main CPU" }
 	],
-	"returnValue": { "type": "Table", "description": "{ address = int, memType = enum }" }
+ 	"returnValue": { "type": "Table", "description": "返回表：{ address = int, memType = enum }" }
 },
 {
 	"name": "createSavestate",
 	"category": "Miscellaneous",
 	"subcategory": "SaveStates",
-	"description": "Creates a savestate and returns it as a binary string.\n\nNote: This can only be called from inside an \"exec\" memory callback.",
-	"returnValue": { "type": "String", "description": "Binary string containing the savestate." }
+ 	"description": "创建一个存档状态并以二进制字符串返回。\n\n注意：此函数只能在 \"exec\" 内存回调中调用。",
+ 	"returnValue": { "type": "String", "description": "包含存档状态的二进制字符串。" }
 },
 {
 	"name": "displayMessage",
 	"category": "Logging",
-	"description": "Displays a message on the main window in the format \"[category] text\"",
+ 	"description": "在主窗口以格式 \"[category] text\" 显示消息",
 	"parameters": [
-		{ "name": "category", "type": "String", "description": "The category is the portion shown between brackets" },
-		{ "name": "text", "type": "String", "description": "Text to show on the screen" }
+		{ "name": "category", "type": "String", "description": "category 是方括号中显示的部分" },
+		{ "name": "text", "type": "String", "description": "要在屏幕上显示的文本" }
 	]
 },
 {
 	"name": "drawLine",
 	"category": "Drawing",
-	"description": "Draws a line between (x, y) to (x2, y2) using the specified color for a specific number of frames.",
+ 	"description": "在 (x, y) 到 (x2, y2) 之间绘制一条线，使用指定颜色并显示指定帧数。",
 	"parameters": [
-		{ "name": "x", "type": "Int", "description": "X position (start of line)" },
-		{ "name": "y", "type": "Int", "description": "Y position (start of line)" },
-		{ "name": "x2", "type": "Int", "description": "X position (end of line)" },
-		{ "name": "y2", "type": "Int", "description": "Y position (end of line)" },
-		{ "name": "color", "type": "Int (ARGB)", "description": "Color", "defaultValue": "0xFFFFFF (white)" },
-		{ "name": "duration", "type": "Int", "description": "Number of frames to display", "defaultValue": "1" },
-		{ "name": "delay", "type": "Int", "description": "Number of frames to wait before drawing the line", "defaultValue": "0" }
+		{ "name": "x", "type": "Int", "description": "X 位置（线段起点）" },
+		{ "name": "y", "type": "Int", "description": "Y 位置（线段起点）" },
+		{ "name": "x2", "type": "Int", "description": "X 位置（线段终点）" },
+		{ "name": "y2", "type": "Int", "description": "Y 位置（线段终点）" },
+		{ "name": "color", "type": "Int (ARGB)", "description": "颜色", "defaultValue": "0xFFFFFF (white)" },
+		{ "name": "duration", "type": "Int", "description": "显示的帧数", "defaultValue": "1" },
+		{ "name": "delay", "type": "Int", "description": "在绘制线条前等待的帧数", "defaultValue": "0" }
 	]
 },
 {
 	"name": "drawPixel",
 	"category": "Drawing",
-	"description": "Draws a pixel at the specified (x, y) coordinates using the specified color for a specific number of frames.",
+ 	"description": "在指定坐标 (x, y) 绘制一个像素，使用指定颜色并显示指定帧数。",
 	"parameters": [
-		{ "name": "x", "type": "Int", "description": "X position" },
-		{ "name": "y", "type": "Int", "description": "Y position" },
-		{ "name": "color", "type": "Int (ARGB)", "description": "Color" },
-		{ "name": "duration", "type": "Int", "description": "Number of frames to display", "defaultValue": "1" },
-		{ "name": "delay", "type": "Int", "description": "Number of frames to wait before drawing the pixel", "defaultValue": "0" }
+		{ "name": "x", "type": "Int", "description": "X 位置" },
+		{ "name": "y", "type": "Int", "description": "Y 位置" },
+		{ "name": "color", "type": "Int (ARGB)", "description": "颜色" },
+		{ "name": "duration", "type": "Int", "description": "显示的帧数", "defaultValue": "1" },
+		{ "name": "delay", "type": "Int", "description": "在绘制像素前等待的帧数", "defaultValue": "0" }
 	]
 },
 {
 	"name": "drawRectangle",
 	"category": "Drawing",
-	"description": "Draws a rectangle between (x, y) to (x+width, y+height) using the specified color for a specific number of frames. If fill is false, only the rectangle's outline will be drawn.",
+ 	"description": "在 (x, y) 到 (x+width, y+height) 之间绘制矩形，使用指定颜色并显示指定帧数。如果 fill 为 false，则只绘制矩形轮廓。",
 	"parameters": [
-		{ "name": "x", "type": "Int", "description": "X position" },
-		{ "name": "y", "type": "Int", "description": "Y position" },
-		{ "name": "width", "type": "Int", "description": "Width" },
-		{ "name": "height", "type": "Int", "description": "Height" },
-		{ "name": "color", "type": "Int (ARGB)", "description": "Color", "defaultValue": "0xFFFFFF (white)" },
-		{ "name": "fill", "type": "Boolean", "description": "Whether or not to draw an outline, or a filled rectangle.", "defaultValue": "false" },
-		{ "name": "duration", "type": "Int", "description": "Number of frames to display", "defaultValue": "1" },
-		{ "name": "delay", "type": "Int", "description": "Number of frames to wait before drawing the rectangle", "defaultValue": "0" }
+		{ "name": "x", "type": "Int", "description": "X 位置" },
+		{ "name": "y", "type": "Int", "description": "Y 位置" },
+		{ "name": "width", "type": "Int", "description": "宽度" },
+		{ "name": "height", "type": "Int", "description": "高度" },
+		{ "name": "color", "type": "Int (ARGB)", "description": "颜色", "defaultValue": "0xFFFFFF (white)" },
+		{ "name": "fill", "type": "Boolean", "description": "是否绘制填充矩形（true 为填充，false 为仅绘制轮廓）", "defaultValue": "false" },
+		{ "name": "duration", "type": "Int", "description": "显示的帧数", "defaultValue": "1" },
+		{ "name": "delay", "type": "Int", "description": "在绘制矩形前等待的帧数", "defaultValue": "0" }
 	]
 },
 {
 	"name": "drawString",
 	"category": "Drawing",
-	"description": "Draws text at (x, y) using the specified text and colors for a specific number of frames.",
+ 	"description": "在 (x, y) 绘制文本，使用指定文字和颜色并显示指定帧数。",
 	"parameters": [
-		{ "name": "x", "type": "Int", "description": "X position" },
-		{ "name": "y", "type": "Int", "description": "Y position" },
-		{ "name": "text", "type": "String", "description": "Text to display" },
-		{ "name": "textColor", "type": "Int (ARGB)", "description": "Color to use for the text", "defaultValue": "0xFFFFFF (white)" },
-		{ "name": "backgroundColor", "type": "Int (ARGB)", "description": "Color to use for the background", "defaultValue": "0 (black)" },
-		{ "name": "maxWidth", "type": "Int", "description": "Max width (pixels) - wraps to next line when reached", "defaultValue": "0" },
-		{ "name": "duration", "type": "Int", "description": "Number of frames to display", "defaultValue": "1" },
-		{ "name": "delay", "type": "Int", "description": "Number of frames to wait before drawing the text", "defaultValue": "0" }
+		{ "name": "x", "type": "Int", "description": "X 位置" },
+		{ "name": "y", "type": "Int", "description": "Y 位置" },
+		{ "name": "text", "type": "String", "description": "要显示的文本" },
+		{ "name": "textColor", "type": "Int (ARGB)", "description": "文本颜色", "defaultValue": "0xFFFFFF (white)" },
+		{ "name": "backgroundColor", "type": "Int (ARGB)", "description": "背景颜色", "defaultValue": "0 (black)" },
+		{ "name": "maxWidth", "type": "Int", "description": "最大宽度（像素）——超过时换行", "defaultValue": "0" },
+		{ "name": "duration", "type": "Int", "description": "显示的帧数", "defaultValue": "1" },
+		{ "name": "delay", "type": "Int", "description": "在绘制文本前等待的帧数", "defaultValue": "0" }
 	]
 },
 {
 	"name": "getAccessCounters",
 	"category": "Miscellaneous",
 	"subcategory": "AccessCounters",
-	"description": "Returns an array of access counters for the specified memory and operation types.",
+ 	"description": "返回指定内存和操作类型的访问计数器数组。",
 	"parameters": [
-		{ "name": "counterType", "type": "Enum", "enumName": "counterType", "description": "Counter type" },
-		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "Memory type" }
+		{ "name": "counterType", "type": "Enum", "enumName": "counterType", "description": "计数器类型" },
+		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "内存类型" }
 	],
-	"returnValue": { "type": "Array", "description": "Array of ints" }
+ 	"returnValue": { "type": "Array", "description": "整数数组" }
 },
 {
 	"name": "getCdlData",
 	"category": "Miscellaneous",
 	"subcategory": "Cdl",
-	"description": "Returns the current state of the CDL (code/data log) for the specified memory type. This can only be used for (some) ROM memory types.",
+ 	"description": "返回指定内存类型的 CDL（代码/数据日志）当前状态。此功能仅适用于某些 ROM 内存类型。",
 	"parameters": [
-		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "Memory type" }
+		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "内存类型" }
 	],
-	"returnValue": { "type": "Array", "description": "Array of bytes" }
+ 	"returnValue": { "type": "Array", "description": "字节数组" }
 },
 {
 	"name": "getDrawSurfaceSize",
 	"category": "Drawing",
-	"description": "Returns a table containing the full size, visible size and overscan size for the selected draw surface.",
+ 	"description": "返回一个表，包含所选绘制表面的完整尺寸、可见尺寸和超扫描（overscan）尺寸。",
 	"parameters": [
-		{ "name": "surface", "type": "Enum", "enumName": "drawSurface", "description": "Draw surface", "defaultValue": "current draw surface" }
+		{ "name": "surface", "type": "Enum", "enumName": "drawSurface", "description": "绘制表面", "defaultValue": "current draw surface" }
 	],
-	"returnValue": { "type": "Table", "description": "{ width = int, height = int, visibleWidth = int, visibleHeight = int, overscan = { top = int, bottom = int, left = int, right = int } }" }
+ 	"returnValue": { "type": "Table", "description": "返回表：{ width = int, height = int, visibleWidth = int, visibleHeight = int, overscan = { top = int, bottom = int, left = int, right = int } }" }
 },
 {
 	"name": "getInput",
 	"category": "Input",
-	"description": "Returns a table containing the state of all buttons for the selected port/controller. The table's content varies based on the controller type.",
+ 	"description": "返回一个表，包含所选端口/控制器的所有按键状态。表的内容会根据控制器类型而不同。",
 	"parameters": [
-		{ "name": "port", "type": "Int", "description": "Port number" },
-		{ "name": "subPort", "type": "Int", "description": "Subport number - this is used for multitap-like adapters.", "defaultValue": "0" }
+		{ "name": "port", "type": "Int", "description": "端口编号" },
+		{ "name": "subPort", "type": "Int", "description": "子端口编号 - 用于类似多路适配器的情况。", "defaultValue": "0" }
 	],
-	"returnValue": { "type": "Table", "description": "Content varies based on controller type." }
+ 	"returnValue": { "type": "Table", "description": "内容根据控制器类型而异。" }
 },
 {
 	"name": "getLabelAddress",
 	"category": "MemoryAccess",
-	"description": "Returns a table containing the address and memory type for the specified label.",
+ 	"description": "返回一个表，包含指定标签的地址和内存类型。",
 	"parameters": [
-		{ "name": "label", "type": "String", "description": "Label" }
+		{ "name": "label", "type": "String", "description": "标签" }
 	],
-	"returnValue": { "type": "Table", "description": "{ address = int, memType = int }\n\nNote: Returns nil when the specified label could not be found." }
+ 	"returnValue": { "type": "Table", "description": "返回表：{ address = int, memType = int }\n\n注意：当找不到指定标签时返回 nil。" }
 },
 {
 	"name": "getLogWindowLog",
 	"category": "Logging",
-	"description": "Returns the same text as what is shown in the emulator's log window.",
-	"returnValue": { "type": "String", "description": "A string containing the log shown in the log window" }
+ 	"description": "返回与模拟器日志窗口中显示相同的文本。",
+ 	"returnValue": { "type": "String", "description": "包含日志窗口显示内容的字符串" }
 },
 {
 	"name": "getMemorySize",
 	"category": "MemoryAccess",
-	"description": "Returns the size (in bytes) of the specified memory type.",
+ 	"description": "返回指定内存类型的大小（字节）。",
 	"parameters": [
-		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "Memory type" }
+		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "内存类型" }
 	],
-	"returnValue": { "type": "Int", "description": "Size of the specified memory type" }
+ 	"returnValue": { "type": "Int", "description": "指定内存类型的大小" }
 },
 {
 	"name": "getMouseState",
 	"category": "Input",
-	"description": "Returns a table containing the position and the state of all 3 buttons.",
-	"returnValue": { "type": "Table", "description": "{ x = int, y = int, relativeX = int, relativeY = int, left = bool, middle = bool, right = bool }" }
+ 	"description": "返回一个表，包含鼠标位置和三个按钮的状态。",
+ 	"returnValue": { "type": "Table", "description": "返回表：{ x = int, y = int, relativeX = int, relativeY = int, left = bool, middle = bool, right = bool }" }
 },
 {
 	"name": "getPixel",
 	"category": "Drawing",
-	"description": "Returns the color (in ARGB format) of the screen's output for the specified coordinates.",
+ 	"description": "返回指定坐标处屏幕输出的颜色（ARGB 格式）。",
 	"parameters": [
-		{ "name": "x", "type": "Int", "description": "X position" },
-		{ "name": "y", "type": "Int", "description": "Y position" }
+		{ "name": "x", "type": "Int", "description": "X 位置" },
+		{ "name": "y", "type": "Int", "description": "Y 位置" }
 	],
-	"returnValue": { "type": "Int", "description": "ARGB color" }
+ 	"returnValue": { "type": "Int", "description": "ARGB 颜色" }
 },
 {
 	"name": "getRomInfo",
 	"category": "Miscellaneous",
 	"subcategory": "Others",
-	"description": "Returns information about the ROM file that is currently running.",
-	"returnValue": { "type": "Table", "description": "{ name = string, path = string, fileSha1Hash = string }" }
+ 	"description": "返回当前运行的 ROM 文件的信息。",
+ 	"returnValue": { "type": "Table", "description": "返回表：{ name = string, path = string, fileSha1Hash = string }" }
 },
 {
 	"name": "getScreenBuffer",
 	"category": "Drawing",
-	"description": "Returns an array of ARGB values with the contents of the console's screen - can be used with emu.setScreenBuffer() to modify the screen's contents.\n\nNote: The size of the array varies based on the console, game, and sometimes scene. Use emu.getScreenSize() to get the screen's current dimensions.",
-	"returnValue": { "type": "Array", "description": "Array of ARGB values" }
+ 	"description": "返回一个包含控制台屏幕内容的 ARGB 值数组 - 可与 emu.setScreenBuffer() 一起使用以修改屏幕内容。\n\n注意：数组大小会根据主机、游戏，甚至场景而变化。使用 emu.getScreenSize() 获取屏幕当前尺寸。",
+ 	"returnValue": { "type": "Array", "description": "ARGB 值数组" }
 },
 {
 	"name": "getScreenSize",
 	"category": "Drawing",
-	"description": "Returns a table containing the size of the console's current screen output.",
-	"returnValue": { "type": "Table", "description": "{ width = int, height = int }" }
+ 	"description": "返回一个表，包含控制台当前屏幕输出的尺寸。",
+ 	"returnValue": { "type": "Table", "description": "返回表：{ width = int, height = int }" }
 },
 {
 	"name": "getScriptDataFolder",
 	"category": "Miscellaneous",
 	"subcategory": "Others",
-	"description": "This function returns the path to a unique folder (based on the script's filename) where the script should store its data (if any data needs to be saved). The data will be saved in subfolders inside the LuaScriptData folder in Mesen's home folder.\n\nNote: This function will return an empty string if the \"Allow access to I/O and OS functions\" option is disabled.",
-	"returnValue": { "type": "String", "description": "The folder's path" }
+ 	"description": "此函数返回一个唯一文件夹的路径（基于脚本文件名），脚本应将其数据（若有）保存在该文件夹中。数据将保存在 Mesen 主目录的 LuaScriptData 文件夹内的子目录中。\n\n注意：如果 \"允许访问 I/O 和 OS 功能\" 选项被禁用，本函数将返回空字符串。",
+ 	"returnValue": { "type": "String", "description": "文件夹路径" }
 },
 {
 	"name": "getState",
 	"category": "Emulation",
-	"description": "Returns a table containing key-value pairs that describe the console's current state.\n\nNote: The name of the values returned may change from one version to another. Some values may represent the emulator's internal state and may not be useful (these will be hidden in future versions.)",
-	"returnValue": { "type": "Table", "description": "Content varies for each console and game." }
+ 	"description": "返回一个表，包含描述主机当前状态的键值对。\n\n注意：返回的字段名称可能会随版本变化。部分字段可能表示模拟器的内部状态且并无实际用途（这些字段将在未来版本中隐藏）。",
+ 	"returnValue": { "type": "Table", "description": "内容因主机和游戏而异。" }
 },
 {
 	"name": "isKeyPressed",
 	"category": "Input",
-	"description": "Returns whether or not a specific key is pressed. The \"keyName\" must be the same as the string shown in the UI when the key is bound to a button.",
+ 	"description": "返回特定按键是否被按下。\"keyName\" 必须与 UI 中按键绑定时显示的字符串相同。",
 	"parameters": [
-		{ "name": "keyName", "type": "String", "description": "Name of the key to check" }
+		{ "name": "keyName", "type": "String", "description": "要检查的按键名称" }
 	],
-	"returnValue": { "type": "Bool", "description": "The key's state (true when pressed)" }
+ 	"returnValue": { "type": "Bool", "description": "按键状态（按下时为 true）" }
 },
 {
 	"name": "loadSavestate",
 	"category": "Miscellaneous",
 	"subcategory": "SaveStates",
-	"description": "Loads a savestate from a binary string.\n\nNote: This can only be called from inside an \"exec\" memory callback.",
+	"description": "从二进制字符串加载存档状态。\n\n注意：此函数只能在 \"exec\" 内存回调中调用。",
 	"parameters": [
-		{ "name": "state", "type": "String", "description": "Binary data containing the savestate" }
+		{ "name": "state", "type": "String", "description": "包含存档状态的二进制数据" }
 	]
 },
 {
 	"name": "log",
 	"category": "Logging",
-	"description": "Logs the specified string in the script's log window - useful for debugging scripts.",
+	"description": "在脚本的日志窗口记录指定字符串——对调试脚本很有用。",
 	"parameters": [
-		{ "name": "text", "type": "String", "description": "Text to log" }
+		{ "name": "text", "type": "String", "description": "要记录的文本" }
 	]
 },
 {
 	"name": "measureString",
 	"category": "Drawing",
-	"description": "Measures the specified string and returns a table containing the width and height that the string would take when drawn.",
+	"description": "测量指定字符串，并返回一个表，包含绘制该字符串所需的宽度和高度。",
 	"parameters": [
-		{ "name": "text", "type": "String", "description": "String to measure" },
-		{ "name": "maxWidth", "type": "Int", "description": "Max width (pixels) - wraps to next line when reached", "defaultValue": "0" }
+		{ "name": "text", "type": "String", "description": "要测量的字符串" },
+		{ "name": "maxWidth", "type": "Int", "description": "最大宽度（像素）——超过时换行", "defaultValue": "0" }
 	],
-	"returnValue": { "type": "Table", "description": "{ width = int, height = int }" }
+	"returnValue": { "type": "Table", "description": "返回表：{ width = int, height = int }" }
 },
 {
 	"name": "read",
 	"category": "MemoryAccess",
-	"description": "Reads an 8-bit value from the specified address and memory type.\n\nNote: When using \"memType.[cpuName]\" memory types, side-effects can occur from reading a value. Use the \"memType.[cpuName]Debug\" enum values to avoid side-effects.",
+	"description": "从指定地址和内存类型读取 8 位值。\n\n注意：当使用 \"memType.[cpuName]\" 内存类型时，读取可能产生副作用。使用 \"memType.[cpuName]Debug\" 枚举值可避免副作用。",
 	"parameters": [
-		{ "name": "address", "type": "Int", "description": "Address to read from" },
-		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "Memory type to read from" },
-		{ "name": "signed", "type": "Bool", "description": "When true, the return value is an 8-bit signed value." }
+		{ "name": "address", "type": "Int", "description": "要读取的地址" },
+		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "要读取的内存类型" },
+		{ "name": "signed", "type": "Bool", "description": "为 true 时，返回值为 8 位带符号值。" }
 	],
-	"returnValue": { "type": "Int", "description": "An 8-bit (signed or unsigned) value." }
+	"returnValue": { "type": "Int", "description": "一个 8 位（有符号或无符号）值。" }
 },
 {
 	"name": "read16",
 	"category": "MemoryAccess",
-	"description": "Reads a 16-bit value from the specified address and memory type.\n\nNote: When using \"memType.[cpuName]\" memory types, side-effects can occur from reading a value. Use the \"memType.[cpuName]Debug\" enum values to avoid side-effects.",
+	"description": "从指定地址和内存类型读取 16 位值。\n\n注意：当使用 \"memType.[cpuName]\" 内存类型时，读取可能产生副作用。使用 \"memType.[cpuName]Debug\" 枚举值可避免副作用。",
 	"parameters": [
-		{ "name": "address", "type": "Int", "description": "Address to read from" },
-		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "Memory type to read from" },
-		{ "name": "signed", "type": "Bool", "description": "When true, the return value is a 16-bit signed value." }
+		{ "name": "address", "type": "Int", "description": "要读取的地址" },
+		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "要读取的内存类型" },
+		{ "name": "signed", "type": "Bool", "description": "为 true 时，返回值为 16 位带符号值。" }
 	],
-	"returnValue": { "type": "Int", "description": "A 16-bit (signed or unsigned) value." }
+	"returnValue": { "type": "Int", "description": "一个 16 位（有符号或无符号）值。" }
 },
 {
 	"name": "read32",
 	"category": "MemoryAccess",
-	"description": "Reads a 32-bit value from the specified address and memory type.\n\nNote: When using \"memType.[cpuName]\" memory types, side-effects can occur from reading a value. Use the \"memType.[cpuName]Debug\" enum values to avoid side-effects.",
+	"description": "从指定地址和内存类型读取 32 位值。\n\n注意：当使用 \"memType.[cpuName]\" 内存类型时，读取可能产生副作用。使用 \"memType.[cpuName]Debug\" 枚举值可避免副作用。",
 	"parameters": [
-		{ "name": "address", "type": "Int", "description": "Address to read from" },
-		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "Memory type to read from" },
-		{ "name": "signed", "type": "Bool", "description": "When true, the return value is a 32-bit signed value." }
+		{ "name": "address", "type": "Int", "description": "要读取的地址" },
+		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "要读取的内存类型" },
+		{ "name": "signed", "type": "Bool", "description": "为 true 时，返回值为 32 位带符号值。" }
 	],
-	"returnValue": { "type": "Int", "description": "A 32-bit (signed or unsigned) value." }
+	"returnValue": { "type": "Int", "description": "一个 32 位（有符号或无符号）值。" }
 },
 {
 	"name": "reset",
 	"category": "Emulation",
-	"description": "Resets the current game. If the console does not have a reset button, this will have the same effect as power cycling."
+ 	"description": "重置当前游戏。如果主机没有重置按钮，该操作效果等同于断电重启（power cycling）。"
 },
 {
 	"name": "resetAccessCounters",
 	"category": "Miscellaneous",
 	"subcategory": "AccessCounters",
-	"description": "Resets all access counters."
+ 	"description": "重置所有访问计数器。"
 },
 {
 	"name": "resume",
 	"category": "Emulation",
-	"description": "Resumes execution after a break."
+ 	"description": "在中断后恢复执行。"
 },
 {
 	"name": "rewind",
 	"category": "Emulation",
-	"description": "Instantly rewinds the emulation by the number of seconds specified.\n\nNote: This can only be called from inside an \"exec\" memory callback.",
+	"description": "将模拟即时回放指定的秒数。\n\n注意：此函数只能在 \"exec\" 内存回调中调用。",
 	"parameters": [
-		{ "name": "seconds", "type": "Int", "description": "Number of seconds to rewind" }
+		{ "name": "seconds", "type": "Int", "description": "要回放的秒数" }
 	]
 },
 {
 	"name": "selectDrawSurface",
 	"category": "Drawing",
-	"description": "Selects the surface on which any subsequent draw call will be drawn to.\n\nconsoleScreen: This surface is the same as the console's output and is a fixed resolution. Anything drawn here will appear in screenshots/videos.\n\nscriptHud: This surface is independent to the console's output and has a configurable resolution. Drawings done on this surface will not appear in screenshots/videos.\n\nNote: setScreenBuffer always draws to the \"consoleScreen\" surface.",
+	"description": "选择后续绘制调用要绘制到的表面。\n\nconsoleScreen：此表面与主机的输出相同，分辨率固定。在此表面绘制的内容会出现在截图/视频中。\n\nscriptHud：此表面独立于主机输出，具有可配置分辨率。在此表面绘制的内容不会出现在截图/视频中。\n\n注意：setScreenBuffer 总是绘制到 \"consoleScreen\" 表面。",
 	"parameters": [
-		{ "name": "surface", "type": "Enum", "enumName": "drawSurface", "description": "Draw surface" },
-		{ "name": "scale", "type": "Int", "description": "Scale to use for the \"scriptHud\" surface (max: 4)", "defaultValue": "current scale" }
+		{ "name": "surface", "type": "Enum", "enumName": "drawSurface", "description": "绘制表面" },
+		{ "name": "scale", "type": "Int", "description": "用于 \"scriptHud\" 表面的缩放（最大：4）", "defaultValue": "current scale" }
 	]
 },
 {
 	"name": "setInput",
 	"category": "Input",
-	"description": "Sets the input state for the specified port. Buttons enabled or disabled via setInput will keep their state until the next inputPolled event.\n\nNote: If a button's value is not specified in the \"input\" argument, then the player retains control of that button. For example, \"emu.setInput({ select = false, start = false }, 0)\" will prevent the player 1 from using both the start and select buttons, but all other buttons will still work as normal.\n\nIt is recommended to use this function within a callback for the inputPolled event. Otherwise, the inputs may not be applied before the ROM has the chance to read them.",
+	"description": "设置指定端口的输入状态。通过 setInput 启用或禁用的按钮状态会保持到下一个 inputPolled 事件为止。\n\n注意：如果在 \"input\" 参数中未对某个按钮指定值，则玩家仍然可以控制该按钮。例如，\"emu.setInput({ select = false, start = false }, 0)\" 会阻止玩家 1 使用 start 和 select 两个按钮，但其他按钮仍然正常工作。\n\n建议在 inputPolled 事件的回调中使用此函数。否则输入可能在 ROM 读取之前未被应用。",
 	"parameters": [
-		{ "name": "input", "type": "Table", "description": "Controller state to apply to the port, same format as the return value of getInput()." },
-		{ "name": "port", "type": "Int", "description": "Port number" },
-		{ "name": "subPort", "type": "Int", "description": "Subport number - this is used for multitap-like adapters.", "defaultValue": "0" }
+		{ "name": "input", "type": "Table", "description": "要应用到端口的控制器状态，格式与 getInput() 的返回值相同。" },
+		{ "name": "port", "type": "Int", "description": "端口编号" },
+		{ "name": "subPort", "type": "Int", "description": "子端口编号 - 用于类似多路适配器的情况。", "defaultValue": "0" }
 	]
 },
 {
 	"name": "setScreenBuffer",
 	"category": "Drawing",
-	"description": "Replaces the current frame with the contents of the specified array.",
+	"description": "用指定数组的内容替换当前帧。",
 	"parameters": [
-		{ "name": "screenBuffer", "type": "Array", "description": "Array of integers in ARGB format" }
+		{ "name": "screenBuffer", "type": "Array", "description": "以 ARGB 格式表示的整数数组" }
 	]
 },
 {
 	"name": "setState",
 	"category": "Emulation",
-	"description": "Changes the state of the emulator to match the values provided in the \"state\" parameter.\n\nNote: The name of the values returned may change from one version to another. Some values may represent the emulator's internal state and should not be changed (access to these will be removed in future versions.)",
+	"description": "将模拟器状态更改为与 \"state\" 参数中提供的值相匹配。\n\n注意：返回字段名称可能随版本变化。部分字段可能表示模拟器的内部状态，不应更改（这些访问将在未来版本中移除）。",
 	"parameters": [
-		{ "name": "state", "type": "Table", "description": "A key-value table containing the state to be applied." }
+		{ "name": "state", "type": "Table", "description": "包含要应用状态的键值表。" }
 	]
 },
 {
 	"name": "step",
 	"category": "Emulation",
-	"description": "Breaks the emulation's execution when the step conditions are reached.",
+	"description": "当达到步进条件时中断模拟执行。",
 	"parameters": [
-		{ "name": "count", "type": "Int", "description": "Number of cycles/frames/etc." },
-		{ "name": "stepType", "type": "Enum", "enumName": "stepType", "description": "Step type" },
-		{ "name": "cpuType", "type": "Enum", "enumName": "cpuType", "description": "CPU type", "defaultValue": "main CPU" }
+		{ "name": "count", "type": "Int", "description": "周期/帧数等的数量" },
+		{ "name": "stepType", "type": "Enum", "enumName": "stepType", "description": "步进类型" },
+		{ "name": "cpuType", "type": "Enum", "enumName": "cpuType", "description": "CPU 类型", "defaultValue": "main CPU" }
 	]
 },
 {
 	"name": "stop",
 	"category": "Emulation",
-	"description": "Stops the emulation and returns the specified exit code (when used with the --testRunner command line option).",
+	"description": "停止模拟并返回指定的退出代码（与 --testRunner 命令行选项一起使用时）。",
 	"parameters": [
-		{ "name": "exitCode", "type": "Int", "description": "The exit code that the Mesen process will return." }
+		{ "name": "exitCode", "type": "Int", "description": "Mesen 进程将返回的退出代码" }
 	]
 },
 {
 	"name": "takeScreenshot",
 	"category": "Miscellaneous",
 	"subcategory": "Others",
-	"description": "Takes a screenshot and returns a PNG file as a string. The screenshot is not saved to the disk.",
-	"returnValue": { "type": "String", "description": "A binary string containing a PNG image." }
+	"description": "截取屏幕并以字符串形式返回 PNG 文件。截图不会保存到磁盘。",
+	"returnValue": { "type": "String", "description": "包含 PNG 图像的二进制字符串" }
 },
 {
 	"name": "removeEventCallback",
 	"category": "Callbacks",
-	"description": "Removes a previously registered callback function.",
+	"description": "移除先前注册的回调函数。",
 	"parameters": [
-		{ "name": "reference", "type": "Int", "description": "Value returned by the call to emu.addEventCallback()" },
-		{ "name": "eventType", "type": "Enum", "enumName": "eventType", "description": "Event type" }
+		{ "name": "reference", "type": "Int", "description": "emu.addEventCallback() 调用返回的值" },
+		{ "name": "eventType", "type": "Enum", "enumName": "eventType", "description": "事件类型" }
 	]
 },
 {
 	"name": "removeMemoryCallback",
 	"category": "Callbacks",
-	"description": "Removes a previously registered callback function.",
+	"description": "移除先前注册的回调函数。",
 	"parameters": [
-		{ "name": "reference", "type": "Int", "description": "Value returned by the call to emu.addMemoryCallback()" },
-		{ "name": "callbackType", "type": "Enum", "enumName": "callbackType", "description": "Callback type" },
-		{ "name": "startAddress", "type": "Int", "description": "Start of the address range" },
-		{ "name": "endAddress", "type": "Int", "description": "End of the address range", "defaultValue": "start address" },
-		{ "name": "cpuType", "type": "Enum", "enumName": "cpuType", "description": "CPU used for the callback", "defaultValue": "main CPU" },
-		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "Memory type", "defaultValue": "main CPU memory" }
+		{ "name": "reference", "type": "Int", "description": "emu.addMemoryCallback() 调用返回的值" },
+		{ "name": "callbackType", "type": "Enum", "enumName": "callbackType", "description": "回调类型" },
+		{ "name": "startAddress", "type": "Int", "description": "地址范围起始" },
+		{ "name": "endAddress", "type": "Int", "description": "地址范围结束", "defaultValue": "start address" },
+		{ "name": "cpuType", "type": "Enum", "enumName": "cpuType", "description": "用于回调的 CPU", "defaultValue": "main CPU" },
+		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "内存类型", "defaultValue": "main CPU memory" }
 	]
 },
 {
 	"name": "write",
 	"category": "MemoryAccess",
-	"description": "Writes an 8-bit value to the specified address and memory type.\n\nNote: When using \"memType.[cpuName]\" memory types, side-effects can occur from writing a value. Use the \"memType.[cpuName]Debug\" enum values to avoid side-effects.",
+	"description": "向指定地址和内存类型写入 8 位值。\n\n注意：当使用 \"memType.[cpuName]\" 内存类型时，写入可能产生副作用。使用 \"memType.[cpuName]Debug\" 枚举值可避免副作用。",
 	"parameters": [
-		{ "name": "address", "type": "Int", "description": "Address to write to" },
-		{ "name": "value", "type": "Int", "description": "8-bit value to write" },
-		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "Memory type to write to" }
+		{ "name": "address", "type": "Int", "description": "要写入的地址" },
+		{ "name": "value", "type": "Int", "description": "要写入的 8 位值" },
+		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "要写入的内存类型" }
 	]
 },
 {
 	"name": "write16",
 	"category": "MemoryAccess",
-	"description": "Writes a 16-bit value to the specified address and memory type.\n\nNote: When using \"memType.[cpuName]\" memory types, side-effects can occur from writing a value. Use the \"memType.[cpuName]Debug\" enum values to avoid side-effects.",
+	"description": "向指定地址和内存类型写入 16 位值。\n\n注意：当使用 \"memType.[cpuName]\" 内存类型时，写入可能产生副作用。使用 \"memType.[cpuName]Debug\" 枚举值可避免副作用。",
 	"parameters": [
-		{ "name": "address", "type": "Int", "description": "Address to write to" },
-		{ "name": "value", "type": "Int", "description": "16-bit value to write" },
-		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "Memory type to write to" }
+		{ "name": "address", "type": "Int", "description": "要写入的地址" },
+		{ "name": "value", "type": "Int", "description": "要写入的 16 位值" },
+		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "要写入的内存类型" }
 	]
 },
 {
 	"name": "write32",
 	"category": "MemoryAccess",
-	"description": "Writes a 32-bit value to the specified address and memory type.\n\nNote: When using \"memType.[cpuName]\" memory types, side-effects can occur from writing a value. Use the \"memType.[cpuName]Debug\" enum values to avoid side-effects.",
+	"description": "向指定地址和内存类型写入 32 位值。\n\n注意：当使用 \"memType.[cpuName]\" 内存类型时，写入可能产生副作用。使用 \"memType.[cpuName]Debug\" 枚举值可避免副作用。",
 	"parameters": [
-		{ "name": "address", "type": "Int", "description": "Address to write to" },
-		{ "name": "value", "type": "Int", "description": "32-bit value to write" },
-		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "Memory type to write to" }
+		{ "name": "address", "type": "Int", "description": "要写入的地址" },
+		{ "name": "value", "type": "Int", "description": "要写入的 32 位值" },
+		{ "name": "memoryType", "type": "Enum", "enumName": "memType", "description": "要写入的内存类型" }
 	]
 },
 {
 	"name": "callbackType",
 	"category": "Enums",
-	"description": "Used by emu.addMemoryCallback() and emu.removeMemoryCallback()",
+	"description": "由 emu.addMemoryCallback() 和 emu.removeMemoryCallback() 使用",
 	"enumValues": [
-		{ "name": "read", "description": "Callback is called when data is read" },
-		{ "name": "write", "description": "Callback is called when data is written" },
-		{ "name": "exec", "description": "Callback is called when the CPU starts executing an instruction" }
+		{ "name": "read", "description": "在读取数据时调用回调" },
+		{ "name": "write", "description": "在写入数据时调用回调" },
+		{ "name": "exec", "description": "当 CPU 开始执行指令时调用回调" }
 	]
 },
 {
 	"name": "cheatType",
 	"category": "Enums",
-	"description": "Used by emu.addCheat()",
+ 	"description": "由 emu.addCheat() 使用",
 	"enumValues": [
 		{ "name": "nesGameGenie", "description": "Game Genie (NES)" },
 		{ "name": "nesProActionRocky", "description": "Pro Action Rocky (NES)" },
@@ -480,20 +480,20 @@
 {
 	"name": "counterType",
 	"category": "Enums",
-	"description": "Used by emu.getAccessCounters()",
+	"description": "由 emu.getAccessCounters() 使用",
 	"enumValues": [
-		{ "name": "readCount", "description": "Returns the number of times each byte was read" },
-		{ "name": "writeCount", "description": "Returns the number of times each byte was written" },
-		{ "name": "execCount", "description": "Returns the number of times each byte was executed" },
-		{ "name": "lastReadClock", "description": "Returns the time at which each byte was last read" },
-		{ "name": "lastWriteClock", "description": "Returns the time at which each byte was last written" },
-		{ "name": "lastExecClock", "description": "Returns the time at which each byte was last executed" }
+		{ "name": "readCount", "description": "返回每个字节被读取的次数" },
+		{ "name": "writeCount", "description": "返回每个字节被写入的次数" },
+		{ "name": "execCount", "description": "返回每个字节被执行的次数" },
+		{ "name": "lastReadClock", "description": "返回每个字节上次被读取的时间" },
+		{ "name": "lastWriteClock", "description": "返回每个字节上次被写入的时间" },
+		{ "name": "lastExecClock", "description": "返回每个字节上次被执行的时间" }
 	]
 },
 {
 	"name": "cpuType",
 	"category": "Enums",
-	"description": "Used by several APIs to specify which CPU the API call applies to.",
+ 	"description": "用于多个 API 指定调用适用于哪个 CPU。",
 	"enumValues": [
 		{ "name": "snes", "description": "SNES - Main CPU - S-CPU 5A22 (65816)" },
 		{ "name": "spc", "description": "SNES - SPC" },
@@ -512,33 +512,33 @@
 {
 	"name": "drawSurface",
 	"category": "Enums",
-	"description": "Used by emu.selectDrawSurface() and emu.getDrawSurfaceSize()",
+	"description": "由 emu.selectDrawSurface() 和 emu.getDrawSurfaceSize() 使用",
 	"enumValues": [
-		{ "name": "consoleScreen", "description": "Console's framebuffer. Drawings appear in screenshots/videos." },
-		{ "name": "scriptHud", "description": "Separate surface with a configurable resolution. Drawings not shown in screenshots/videos." }
+		{ "name": "consoleScreen", "description": "主机帧缓冲区。在此绘制的内容会出现在截图/视频中。" },
+		{ "name": "scriptHud", "description": "独立表面，具有可配置分辨率。在此绘制的内容不会出现在截图/视频中。" }
 	]
 },
 {
 	"name": "eventType",
 	"category": "Enums",
-	"description": "Used by emu.addEventCallback() and emu.removeEventCallback()",
+	"description": "由 emu.addEventCallback() 和 emu.removeEventCallback() 使用",
 	"enumValues": [
-		{ "name": "nmi", "description": "Triggered when an NMI occurs (not available on some consoles)" },
-		{ "name": "irq", "description": "Triggered when an IRQ occurs" },
-		{ "name": "startFrame", "description": "Triggered when a frame starts (typically once vertical blank ends)" },
-		{ "name": "endFrame", "description": "Triggered when a frame ends (typically once vertical blank starts)" },
-		{ "name": "reset", "description": "Triggered when the console is reset (not available on some consoles)" },
-		{ "name": "scriptEnded", "description": "Triggered when the Lua script is stopped" },
-		{ "name": "inputPolled", "description": "Triggered after the emulator updates the state of all input devices (once per frame)" },
-		{ "name": "stateLoaded", "description": "Triggered when a savestate is manually loaded" },
-		{ "name": "stateSaved", "description": "Triggered when a savestate is manually saved" },
-		{ "name": "codeBreak", "description": "Triggered when code execution breaks (e.g breakpoint, step, etc.)" }
+		{ "name": "nmi", "description": "当发生 NMI 时触发（某些主机不可用）" },
+		{ "name": "irq", "description": "当发生 IRQ 时触发" },
+		{ "name": "startFrame", "description": "当一帧开始时触发（通常在垂直消隐结束时）" },
+		{ "name": "endFrame", "description": "当一帧结束时触发（通常在垂直消隐开始时）" },
+		{ "name": "reset", "description": "当主机复位时触发（某些主机不可用）" },
+		{ "name": "scriptEnded", "description": "当 Lua 脚本停止时触发" },
+		{ "name": "inputPolled", "description": "在模拟器更新所有输入设备状态后触发（每帧一次）" },
+		{ "name": "stateLoaded", "description": "当手动加载存档状态时触发" },
+		{ "name": "stateSaved", "description": "当手动保存存档状态时触发" },
+		{ "name": "codeBreak", "description": "当代码执行中断时触发（例如断点、步进等）" }
 	]
 },
 {
 	"name": "memType",
 	"category": "Enums",
-	"description": "Used by several APIs to specify which memory type to access/use.",
+ 	"description": "用于多个 API 指定要访问/使用的内存类型。",
 	"enumValues": [
 		{ "name": "snesMemory", "description": "SNES - S-CPU memory" },
 		{ "name": "spcMemory", "description": "SNES - SPC memory" },
@@ -555,20 +555,20 @@
 		{ "name": "gbaMemory", "description": "GBA - CPU memory" },
 		{ "name": "wsMemory", "description": "WS - CPU memory" },
 
-		{ "name": "snesDebug", "description": "SNES - S-CPU memory (no read/write side-effects)" },
-		{ "name": "spcDebug", "description": "SNES - SPC memory (no read/write side-effects)" },
-		{ "name": "sa1Debug", "description": "SNES - SA-1 memory (no read/write side-effects)" },
-		{ "name": "necDspDebug", "description": "SNES - DSP-n memory (no read/write side-effects)" },
-		{ "name": "gsuDebug", "description": "SNES - GSU memory (no read/write side-effects)" },
-		{ "name": "cx4Debug", "description": "SNES - CX4 memory (no read/write side-effects)" },
-		{ "name": "st018MemoryDebug", "description": "SNES - ST018 memory (no read/write side-effects)" },
-		{ "name": "gameboyDebug", "description": "Game Boy - CPU memory (no read/write side-effects)" },
-		{ "name": "nesDebug", "description": "NES - CPU memory (no read/write side-effects)" },
-		{ "name": "nesPpuDebug", "description": "NES - PPU memory (no read/write side-effects)" },
-		{ "name": "pceDebug", "description": "PC Engine - CPU memory (no read/write side-effects)" },
-		{ "name": "smsDebug", "description": "SMS - CPU memory (no read/write side-effects)" },
-		{ "name": "gbaDebug", "description": "GBA - CPU memory (no read/write side-effects)" },
-		{ "name": "wsDebug", "description": "WS - CPU memory (no read/write side-effects)" },
+		{ "name": "snesDebug", "description": "SNES - S-CPU memory（无读/写副作用）" },
+		{ "name": "spcDebug", "description": "SNES - SPC memory（无读/写副作用）" },
+		{ "name": "sa1Debug", "description": "SNES - SA-1 memory（无读/写副作用）" },
+		{ "name": "necDspDebug", "description": "SNES - DSP-n memory（无读/写副作用）" },
+		{ "name": "gsuDebug", "description": "SNES - GSU memory（无读/写副作用）" },
+		{ "name": "cx4Debug", "description": "SNES - CX4 memory（无读/写副作用）" },
+		{ "name": "st018MemoryDebug", "description": "SNES - ST018 memory（无读/写副作用）" },
+		{ "name": "gameboyDebug", "description": "Game Boy - CPU memory（无读/写副作用）" },
+		{ "name": "nesDebug", "description": "NES - CPU memory（无读/写副作用）" },
+		{ "name": "nesPpuDebug", "description": "NES - PPU memory（无读/写副作用）" },
+		{ "name": "pceDebug", "description": "PC Engine - CPU memory（无读/写副作用）" },
+		{ "name": "smsDebug", "description": "SMS - CPU memory（无读/写副作用）" },
+		{ "name": "gbaDebug", "description": "GBA - CPU memory（无读/写副作用）" },
+		{ "name": "wsDebug", "description": "WS - CPU memory（无读/写副作用）" },
 
 		{ "name": "snesPrgRom", "description": "SNES - PRG ROM" },
 		{ "name": "snesWorkRam", "description": "SNES - Work RAM" },
@@ -655,18 +655,18 @@
 {
 	"name": "stepType",
 	"category": "Enums",
-	"description": "Used by emu.step()",
-	"enumValues": [
-		{ "name": "step", "description": "Steps the specified number of instructions" },
-		{ "name": "stepOut", "description": "Steps out of the current subroutine (not available for all CPUs)" },
-		{ "name": "stepOver", "description": "Steps over the current subroutine call (not available for all CPUs)" },
-		{ "name": "cpuCycleStep", "description": "Steps the specified number of CPU cycles (not available for all CPUs)" },
-		{ "name": "ppuStep", "description": "Steps the specified number of scanline cycles" },
-		{ "name": "ppuScanline", "description": "Steps the specified number of scanlines" },
-		{ "name": "ppuFrame", "description": "Steps the specified number of video frames" },
-		{ "name": "specificScanline", "description": "Breaks on the specified scanline number" },
-		{ "name": "runToNmi", "description": "Breaks on the next NMI event" },
-		{ "name": "runToIrq", "description": "Breaks on the next IRQ event" }
-	]
+ 	"description": "由 emu.step() 使用",
+ 	"enumValues": [
+ 		{ "name": "step", "description": "执行指定数量的指令" },
+ 		{ "name": "stepOut", "description": "跳出当前子例程（并非所有 CPU 支持）" },
+ 		{ "name": "stepOver", "description": "单步跳过当前子例程调用（并非所有 CPU 支持）" },
+ 		{ "name": "cpuCycleStep", "description": "执行指定数量的 CPU 周期（并非所有 CPU 支持）" },
+ 		{ "name": "ppuStep", "description": "执行指定数量的扫描线周期" },
+ 		{ "name": "ppuScanline", "description": "执行指定数量的扫描线" },
+ 		{ "name": "ppuFrame", "description": "执行指定数量的视频帧" },
+ 		{ "name": "specificScanline", "description": "在指定扫描线号处中断" },
+ 		{ "name": "runToNmi", "description": "在下一次 NMI 事件时中断" },
+ 		{ "name": "runToIrq", "description": "在下一次 IRQ 事件时中断" }
+ 	]
 }
 ]
