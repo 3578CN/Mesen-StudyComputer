@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Shared/Video/DebugStats.h"
 #include "Shared/Video/DebugHud.h"
 #include "Shared/Audio/SoundMixer.h"
@@ -21,21 +21,21 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	hud->DrawRectangle(8, 8, 115, 49, 0x40000000, true, 1, startFrame);
 	hud->DrawRectangle(8, 8, 115, 49, 0xFFFFFF, false, 1, startFrame);
 
-	hud->DrawString(10, 10, "Audio Stats", 0xFFFFFF, 0xFF000000, 1, startFrame);
-	hud->DrawString(10, 21, "Latency: ", 0xFFFFFF, 0xFF000000, 1, startFrame);
+	hud->DrawString(10, 10, "音频统计", 0xFFFFFF, 0xFF000000, 1, startFrame);
+	hud->DrawString(10, 21, "延迟：", 0xFFFFFF, 0xFF000000, 1, startFrame);
 
 	int color = (stats.AverageLatency > 0 && std::abs(stats.AverageLatency - audioCfg.AudioLatency) > 3) ? 0xFF0000 : 0xFFFFFF;
 	std::stringstream ss;
 	ss << std::fixed << std::setprecision(2) << stats.AverageLatency << " ms";
 	hud->DrawString(54, 21, ss.str(), color, 0xFF000000, 1, startFrame);
 
-	hud->DrawString(10, 30, "Underruns: " + std::to_string(stats.BufferUnderrunEventCount), 0xFFFFFF, 0xFF000000, 1, startFrame);
-	hud->DrawString(10, 39, "Buffer Size: " + std::to_string(stats.BufferSize / 1024) + "kb", 0xFFFFFF, 0xFF000000, 1, startFrame);
-	hud->DrawString(10, 48, "Rate: " + std::to_string((uint32_t)(audioCfg.SampleRate * emu->GetSoundMixer()->GetRateAdjustment())) + "Hz", 0xFFFFFF, 0xFF000000, 1, startFrame);
+	hud->DrawString(10, 30, "下溢次数：" + std::to_string(stats.BufferUnderrunEventCount), 0xFFFFFF, 0xFF000000, 1, startFrame);
+	hud->DrawString(10, 39, "缓冲区大小：" + std::to_string(stats.BufferSize / 1024) + "kb", 0xFFFFFF, 0xFF000000, 1, startFrame);
+	hud->DrawString(10, 48, "采样率：" + std::to_string((uint32_t)(audioCfg.SampleRate * emu->GetSoundMixer()->GetRateAdjustment())) + "Hz", 0xFFFFFF, 0xFF000000, 1, startFrame);
 
 	hud->DrawRectangle(132, 8, 115, 49, 0x40000000, true, 1, startFrame);
 	hud->DrawRectangle(132, 8, 115, 49, 0xFFFFFF, false, 1, startFrame);
-	hud->DrawString(134, 10, "Video Stats", 0xFFFFFF, 0xFF000000, 1, startFrame);
+	hud->DrawString(134, 10, "视频统计", 0xFFFFFF, 0xFF000000, 1, startFrame);
 
 	double totalDuration = 0;
 	for(int i = 0; i < 60; i++) {
@@ -43,11 +43,11 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	}
 
 	ss = std::stringstream();
-	ss << "FPS: " << std::fixed << std::setprecision(4) << (1000 / (totalDuration / 60));
+	ss << "帧率：" << std::fixed << std::setprecision(4) << (1000 / (totalDuration / 60));
 	hud->DrawString(134, 21, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
 
 	ss = std::stringstream();
-	ss << "Last Frame: " << std::fixed << std::setprecision(2) << lastFrameTime << " ms";
+	ss << "上一帧：" << std::fixed << std::setprecision(2) << lastFrameTime << " ms";
 	hud->DrawString(134, 30, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
 
 	if(emu->GetFrameCount() > 60) {
@@ -59,11 +59,11 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	}
 
 	ss = std::stringstream();
-	ss << "Min Delay: " << std::fixed << std::setprecision(2) << ((_lastFrameMin < 9999) ? _lastFrameMin : 0.0) << " ms";
+	ss << "最小延迟：" << std::fixed << std::setprecision(2) << ((_lastFrameMin < 9999) ? _lastFrameMin : 0.0) << " ms";
 	hud->DrawString(134, 39, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
 
 	ss = std::stringstream();
-	ss << "Max Delay: " << std::fixed << std::setprecision(2) << _lastFrameMax << " ms";
+	ss << "最大延迟：" << std::fixed << std::setprecision(2) << _lastFrameMax << " ms";
 	hud->DrawString(134, 48, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
 
 	hud->DrawRectangle(129, 59, 122, 32, 0xFFFFFF, false, 1, startFrame);
@@ -90,17 +90,17 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	hud->DrawRectangle(8, 60, 115, 34, 0x40000000, true, 1, startFrame);
 	hud->DrawRectangle(8, 60, 115, 34, 0xFFFFFF, false, 1, startFrame);
 
-	hud->DrawString(10, 62, "Misc. Stats", 0xFFFFFF, 0xFF000000, 1, startFrame);
+	hud->DrawString(10, 62, "杂项统计", 0xFFFFFF, 0xFF000000, 1, startFrame);
 
 	RewindStats rewindStats = emu->GetRewindManager()->GetStats();
 	double memUsage = (double)rewindStats.MemoryUsage / (1024 * 1024);
 	ss = std::stringstream();
-	ss << "Rewind mem.: " << std::fixed << std::setprecision(2) << memUsage << " MB";
+	ss << "回溯内存：" << std::fixed << std::setprecision(2) << memUsage << " MB";
 	hud->DrawString(10, 73, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
 
 	if(rewindStats.HistoryDuration > 0) {
 		ss = std::stringstream();
-		ss << "   Per min.: " << std::fixed << std::setprecision(2) << (memUsage * 60 * 60 / rewindStats.HistoryDuration) << " MB";
+		ss << "   每分钟：" << std::fixed << std::setprecision(2) << (memUsage * 60 * 60 / rewindStats.HistoryDuration) << " MB";
 		hud->DrawString(9, 82, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
 	}
 }
