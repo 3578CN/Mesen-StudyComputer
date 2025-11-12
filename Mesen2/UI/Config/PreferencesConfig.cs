@@ -21,7 +21,7 @@ namespace Mesen.Config
 {
 	public class PreferencesConfig : BaseConfig<PreferencesConfig>
 	{
-		[Reactive] public MesenTheme Theme { get; set; } = MesenTheme.Light;
+		[Reactive] public MesenTheme Theme { get; set; } = MesenTheme.Dark; // 默认主题：暗色
 		[Reactive] public bool AutomaticallyCheckForUpdates { get; set; } = true;
 		[Reactive] public bool SingleInstance { get; set; } = true;
 		[Reactive] public bool AutoLoadPatches { get; set; } = true;
@@ -66,12 +66,12 @@ namespace Mesen.Config
 		[Reactive] public bool ShowTitleBarInfo { get; set; } = false;
 		[Reactive] public bool ShowDebugInfo { get; set; } = false;
 		[Reactive] public bool DisableOsd { get; set; } = false;
-		[Reactive] public HudDisplaySize HudSize { get; set; } = HudDisplaySize.Fixed;
-		[Reactive] public GameSelectionMode GameSelectionScreenMode { get; set; } = GameSelectionMode.PowerOn; // 从上电重新开始
+		[Reactive] public HudDisplaySize HudSize { get; set; } = HudDisplaySize.Scaled;  // Hud 自动缩放
+		[Reactive] public GameSelectionMode GameSelectionScreenMode { get; set; } = GameSelectionMode.Disabled; // 游戏选择界面禁用
 
 		[Reactive] public FontAntialiasing FontAntialiasing { get; set; } = FontAntialiasing.SubPixelAntialias;
-		[Reactive] public FontConfig MesenFont { get; set; } = new FontConfig() { FontFamily = "Microsoft Sans Serif", FontSize = 11 };
-		[Reactive] public FontConfig MesenMenuFont { get; set; } = new FontConfig() { FontFamily = "Segoe UI", FontSize = 12 };
+		[Reactive] public FontConfig MesenFont { get; set; } = new FontConfig() { FontFamily = "Microsoft YaHei UI", FontSize = 11 };
+		[Reactive] public FontConfig MesenMenuFont { get; set; } = new FontConfig() { FontFamily = "Microsoft YaHei UI", FontSize = 12 };
 
 		[Reactive] public List<ShortcutKeyInfo> ShortcutKeys { get; set; } = new List<ShortcutKeyInfo>();
 
