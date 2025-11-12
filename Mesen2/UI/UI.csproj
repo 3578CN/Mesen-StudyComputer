@@ -96,7 +96,7 @@
 		<RestoreSources>
 			https://nuget-feed-nightly.avaloniaui.net/v3/index.json;https://api.nuget.org/v3/index.json
 		</RestoreSources>
-		<FileVersion>1.0.4</FileVersion>
+		<FileVersion>1.0.5</FileVersion>
 		<AssemblyVersion>$(FileVersion)</AssemblyVersion>
 		<Version>$(FileVersion)</Version>
 	</PropertyGroup>
