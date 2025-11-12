@@ -10,7 +10,10 @@
             "request": "launch",
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/Mesen2/bin/win-x64/Debug/Mesen.dll",
-            "args": [],
+            "args": [
+                "${env:USERPROFILE}\\OneDrive\\Desktop\\bbk_bios10.nes",
+                "${env:USERPROFILE}\\OneDrive\\Desktop\\004.IMG"
+            ],
             "cwd": "${workspaceFolder}/Mesen2/UI",
             "console": "internalConsole",
             "stopAtEntry": false
