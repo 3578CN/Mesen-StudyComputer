@@ -41,8 +41,8 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 
 	const int audioBoxLeft = 8;
 	const int audioBoxTop = 8;
-	const int audioBoxWidth = 122;
-	const int boxGap = 8;
+	const int audioBoxWidth = 116;
+	const int boxGap = 4;
 	const int innerPadding = 3;
 	const int audioDataLines = 4;
 	int audioBoxHeight = std::max<int>(64, 2 * innerPadding + (int)lineHeight + audioDataLines * lineSpacing);
@@ -156,18 +156,37 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 		videoLineY += lineSpacing;
 	}
 
-	int secondRowTop = videoBoxTop + topRowHeight + 6;
-	hud->DrawRectangle(videoBoxLeft, secondRowTop - 1, videoBoxWidth, 34, 0xFFFFFF, false, 1, startFrame);
-	hud->DrawRectangle(videoBoxLeft + 1, secondRowTop, videoBoxWidth - 2, 32, 0x000000, true, 1, startFrame);
+	int secondRowTop = videoBoxTop + topRowHeight + boxGap;
+
+	// 提前计算杂项框尺寸（在使用 miscBoxHeight 前必须定义）
+	const int miscBoxLeft = audioBoxLeft;
+	const int miscBoxTop = secondRowTop;
+	const int miscBoxWidth = audioBoxWidth;
+	const int miscDataLines = 2;
+	int miscBoxHeight = std::max<int>(40, 2 * innerPadding + (int)lineHeight + miscDataLines * lineSpacing);
+
+	// 右下框：使用与杂项框相同的高度/宽度，先填充再绘制边框，保证与其它框渲染顺序一致
+	hud->DrawRectangle(videoBoxLeft, secondRowTop, videoBoxWidth, miscBoxHeight, 0x000000, true, 1, startFrame);
+	hud->DrawRectangle(videoBoxLeft, secondRowTop, videoBoxWidth, miscBoxHeight, 0xFFFFFF, false, 1, startFrame);
 
 	double expectedFrameDelay = 1000 / emu->GetFps();
 
-	for(int i = 0; i < 59; i++) {
+	int maxGraphBars = std::min<int>(59, (videoBoxWidth - 2 * innerPadding) / 2);
+	// Graph vertical mapping: map clamped duration (10..25 ms) into available pixel height inside the box
+	const double graphMin = 10.0;
+	const double graphMax = 25.0;
+	int graphTop = secondRowTop + innerPadding + 1; // leave 1px extra margin from top padding
+	int graphBottom = secondRowTop + miscBoxHeight - innerPadding - 1; // leave 1px extra margin from bottom
+	int availableHeight = graphBottom - graphTop;
+	if(availableHeight < 1) availableHeight = 1;
+	double graphScale = (graphMax - graphMin) > 0.0 ? (double)availableHeight / (graphMax - graphMin) : 1.0;
+
+	for(int i = 0; i < maxGraphBars; i++) {
 		double duration = _frameDurations[(_frameDurationIndex + i) % 60];
 		double nextDuration = _frameDurations[(_frameDurationIndex + i + 1) % 60];
 
-		duration = std::min(25.0, std::max(10.0, duration));
-		nextDuration = std::min(25.0, std::max(10.0, nextDuration));
+		duration = std::min(graphMax, std::max(graphMin, duration));
+		nextDuration = std::min(graphMax, std::max(graphMin, nextDuration));
 
 		int lineColor = 0x00FF00;
 		if(std::abs(duration - expectedFrameDelay) > 2) {
@@ -175,16 +194,12 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 		} else if(std::abs(duration - expectedFrameDelay) > 1) {
 			lineColor = 0xFFA500;
 		}
-		int graphBaseX = videoBoxLeft + 1 + i * 2;
-		int chartBaseY = secondRowTop + 50;
-		hud->DrawLine(graphBaseX, chartBaseY - (int)std::llround(duration * 2), graphBaseX + 2, chartBaseY - (int)std::llround(nextDuration * 2), lineColor, 1, startFrame);
-	}
 
-	const int miscBoxLeft = audioBoxLeft;
-	const int miscBoxTop = secondRowTop;
-	const int miscBoxWidth = audioBoxWidth;
-	const int miscDataLines = 2;
-	int miscBoxHeight = std::max<int>(40, 2 * innerPadding + (int)lineHeight + miscDataLines * lineSpacing);
+		int graphBaseX = videoBoxLeft + innerPadding + i * 2;
+		int y1 = graphBottom - (int)std::llround((duration - graphMin) * graphScale);
+		int y2 = graphBottom - (int)std::llround((nextDuration - graphMin) * graphScale);
+		hud->DrawLine(graphBaseX, y1, graphBaseX + 2, y2, lineColor, 1, startFrame);
+	}
 
 	hud->DrawRectangle(miscBoxLeft, miscBoxTop, miscBoxWidth, miscBoxHeight, 0x40000000, true, 1, startFrame);
 	hud->DrawRectangle(miscBoxLeft, miscBoxTop, miscBoxWidth, miscBoxHeight, 0xFFFFFF, false, 1, startFrame);
