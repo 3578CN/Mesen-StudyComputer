@@ -26,6 +26,18 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 		lineHeight = 10;
 	}
 	int lineSpacing = (int)lineHeight + 2;
+	const std::string colonText = utf8::utf8::encode(L"：");
+	uint32_t colonWidth = hud->MeasureString(colonText).X;
+	if(colonWidth == 0) {
+		colonWidth = 2;
+	}
+	const int valuePadding = 3;
+
+	struct StatLine {
+		std::string Label;
+		std::string Value;
+		int ValueColor;
+	};
 
 	const int audioBoxLeft = 8;
 	const int audioBoxTop = 8;
@@ -50,22 +62,38 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	hud->DrawRectangle(audioBoxLeft, audioBoxTop, audioBoxWidth, audioBoxHeight, 0xFFFFFF, false, 1, startFrame);
 
 	int audioTextY = audioBoxTop + 4;
-	hud->DrawString(10, audioTextY, utf8::utf8::encode(L"音频统计"), 0xFFFFFF, 0xFF000000, 1, startFrame);
+	int audioTextX = audioBoxLeft + 1;
+	hud->DrawString(audioTextX, audioTextY, utf8::utf8::encode(L"音频统计"), 0xFFFFFF, 0xFF000000, 1, startFrame);
 	audioTextY += lineSpacing;
+
+	std::stringstream ss;
+	int latencyColor = (stats.AverageLatency > 0 && std::abs(stats.AverageLatency - audioCfg.AudioLatency) > 3) ? 0xFF0000 : 0xFFFFFF;
+	ss << std::fixed << std::setprecision(2) << stats.AverageLatency << " ms";
+	std::string latencyValue = ss.str();
+	StatLine audioLines[] = {
+		{ utf8::utf8::encode(L"延迟"), latencyValue, latencyColor },
+		{ utf8::utf8::encode(L"下溢次数"), std::to_string(stats.BufferUnderrunEventCount), 0xFFFFFF },
+		{ utf8::utf8::encode(L"缓冲区大小"), std::to_string(stats.BufferSize / 1024) + "kb", 0xFFFFFF },
+		{ utf8::utf8::encode(L"采样率"), std::to_string((uint32_t)(audioCfg.SampleRate * emu->GetSoundMixer()->GetRateAdjustment())) + "Hz", 0xFFFFFF }
+	};
+
+	uint32_t audioLabelWidth = 0;
+	for(const StatLine& line : audioLines) {
+		audioLabelWidth = std::max<uint32_t>(audioLabelWidth, hud->MeasureString(line.Label).X);
+	}
+	int audioLabelBaseX = audioTextX;
+	int audioColonX = audioLabelBaseX + (int)audioLabelWidth;
+	int audioValueX = audioColonX + (int)colonWidth + valuePadding;
 
 	int audioLineY = audioTextY;
-	hud->DrawString(10, audioLineY, utf8::utf8::encode(L"延迟："), 0xFFFFFF, 0xFF000000, 1, startFrame);
-	int color = (stats.AverageLatency > 0 && std::abs(stats.AverageLatency - audioCfg.AudioLatency) > 3) ? 0xFF0000 : 0xFFFFFF;
-	std::stringstream ss;
-	ss << std::fixed << std::setprecision(2) << stats.AverageLatency << " ms";
-	hud->DrawString(54, audioLineY, ss.str(), color, 0xFF000000, 1, startFrame);
-	audioTextY += lineSpacing;
-
-	hud->DrawString(10, audioTextY, utf8::utf8::encode(L"下溢次数：") + std::to_string(stats.BufferUnderrunEventCount), 0xFFFFFF, 0xFF000000, 1, startFrame);
-	audioTextY += lineSpacing;
-	hud->DrawString(10, audioTextY, utf8::utf8::encode(L"缓冲区大小：") + std::to_string(stats.BufferSize / 1024) + "kb", 0xFFFFFF, 0xFF000000, 1, startFrame);
-	audioTextY += lineSpacing;
-	hud->DrawString(10, audioTextY, utf8::utf8::encode(L"采样率：") + std::to_string((uint32_t)(audioCfg.SampleRate * emu->GetSoundMixer()->GetRateAdjustment())) + "Hz", 0xFFFFFF, 0xFF000000, 1, startFrame);
+	for(const StatLine& line : audioLines) {
+		uint32_t labelWidth = hud->MeasureString(line.Label).X;
+		int labelX = audioColonX - (int)labelWidth;
+		hud->DrawString(labelX, audioLineY, line.Label, 0xFFFFFF, 0xFF000000, 1, startFrame);
+		hud->DrawString(audioColonX, audioLineY, colonText, 0xFFFFFF, 0xFF000000, 1, startFrame);
+		hud->DrawString(audioValueX, audioLineY, line.Value, line.ValueColor, 0xFF000000, 1, startFrame);
+		audioLineY += lineSpacing;
+	}
 
 	hud->DrawRectangle(videoBoxLeft, videoBoxTop, videoBoxWidth, videoBoxHeight, 0x40000000, true, 1, startFrame);
 	hud->DrawRectangle(videoBoxLeft, videoBoxTop, videoBoxWidth, videoBoxHeight, 0xFFFFFF, false, 1, startFrame);
@@ -79,16 +107,6 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 		totalDuration += _frameDurations[i];
 	}
 
-	ss = std::stringstream();
-	ss << utf8::utf8::encode(L"帧率：") << std::fixed << std::setprecision(4) << (1000 / (totalDuration / 60));
-	hud->DrawString(134, videoTextY, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
-	videoTextY += lineSpacing;
-
-	ss = std::stringstream();
-	ss << utf8::utf8::encode(L"上一帧：") << std::fixed << std::setprecision(2) << lastFrameTime << " ms";
-	hud->DrawString(134, videoTextY, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
-	videoTextY += lineSpacing;
-
 	if(emu->GetFrameCount() > 60) {
 		_lastFrameMin = std::min(lastFrameTime, _lastFrameMin);
 		_lastFrameMax = std::max(lastFrameTime, _lastFrameMax);
@@ -98,13 +116,42 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	}
 
 	ss = std::stringstream();
-	ss << utf8::utf8::encode(L"最小延迟：") << std::fixed << std::setprecision(2) << ((_lastFrameMin < 9999) ? _lastFrameMin : 0.0) << " ms";
-	hud->DrawString(134, videoTextY, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
-	videoTextY += lineSpacing;
-
+	ss << std::fixed << std::setprecision(4) << (1000 / (totalDuration / 60));
+	std::string frameRateValue = ss.str();
 	ss = std::stringstream();
-	ss << utf8::utf8::encode(L"最大延迟：") << std::fixed << std::setprecision(2) << _lastFrameMax << " ms";
-	hud->DrawString(134, videoTextY, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
+	ss << std::fixed << std::setprecision(2) << lastFrameTime << " ms";
+	std::string lastFrameValue = ss.str();
+	ss = std::stringstream();
+	ss << std::fixed << std::setprecision(2) << ((_lastFrameMin < 9999) ? _lastFrameMin : 0.0) << " ms";
+	std::string minLatencyValue = ss.str();
+	ss = std::stringstream();
+	ss << std::fixed << std::setprecision(2) << _lastFrameMax << " ms";
+	std::string maxLatencyValue = ss.str();
+
+	StatLine videoLines[] = {
+		{ utf8::utf8::encode(L"帧率"), frameRateValue, 0xFFFFFF },
+		{ utf8::utf8::encode(L"上一帧"), lastFrameValue, 0xFFFFFF },
+		{ utf8::utf8::encode(L"最小延迟"), minLatencyValue, 0xFFFFFF },
+		{ utf8::utf8::encode(L"最大延迟"), maxLatencyValue, 0xFFFFFF }
+	};
+
+	uint32_t videoLabelWidth = 0;
+	for(const StatLine& line : videoLines) {
+		videoLabelWidth = std::max<uint32_t>(videoLabelWidth, hud->MeasureString(line.Label).X);
+	}
+	int videoLabelBaseX = 134;
+	int videoColonX = videoLabelBaseX + (int)videoLabelWidth;
+	int videoValueX = videoColonX + (int)colonWidth + valuePadding;
+
+	int videoLineY = videoTextY;
+	for(const StatLine& line : videoLines) {
+		uint32_t labelWidth = hud->MeasureString(line.Label).X;
+		int labelX = videoColonX - (int)labelWidth;
+		hud->DrawString(labelX, videoLineY, line.Label, 0xFFFFFF, 0xFF000000, 1, startFrame);
+		hud->DrawString(videoColonX, videoLineY, colonText, 0xFFFFFF, 0xFF000000, 1, startFrame);
+		hud->DrawString(videoValueX, videoLineY, line.Value, line.ValueColor, 0xFF000000, 1, startFrame);
+		videoLineY += lineSpacing;
+	}
 
 	int secondRowTop = videoBoxTop + topRowHeight + 6;
 	hud->DrawRectangle(129, secondRowTop - 1, 122, 34, 0xFFFFFF, false, 1, startFrame);
@@ -146,13 +193,34 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	RewindStats rewindStats = emu->GetRewindManager()->GetStats();
 	double memUsage = (double)rewindStats.MemoryUsage / (1024 * 1024);
 	ss = std::stringstream();
-	ss << utf8::utf8::encode(L"回溯内存：") << std::fixed << std::setprecision(2) << memUsage << " MB";
-	hud->DrawString(10, miscTextY, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
-	miscTextY += lineSpacing;
-
+	ss << std::fixed << std::setprecision(2) << memUsage << " MB";
+	StatLine miscLines[2] = {
+		{ utf8::utf8::encode(L"回溯内存"), ss.str(), 0xFFFFFF },
+		{ utf8::utf8::encode(L"每分钟"), "", 0xFFFFFF }
+	};
+	int miscLineCount = 1;
 	if(rewindStats.HistoryDuration > 0) {
 		ss = std::stringstream();
-		ss << utf8::utf8::encode(L"   每分钟：") << std::fixed << std::setprecision(2) << (memUsage * 60 * 60 / rewindStats.HistoryDuration) << " MB";
-		hud->DrawString(9, miscTextY, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
+		ss << std::fixed << std::setprecision(2) << (memUsage * 60 * 60 / rewindStats.HistoryDuration) << " MB";
+		miscLines[1].Value = ss.str();
+		miscLineCount = 2;
+	}
+
+	uint32_t miscLabelWidth = 0;
+	for(int i = 0; i < miscLineCount; i++) {
+		miscLabelWidth = std::max<uint32_t>(miscLabelWidth, hud->MeasureString(miscLines[i].Label).X);
+	}
+	int miscLabelBaseX = 10;
+	int miscColonX = miscLabelBaseX + (int)miscLabelWidth;
+	int miscValueX = miscColonX + (int)colonWidth + valuePadding;
+
+	int miscLineY = miscTextY;
+	for(int i = 0; i < miscLineCount; i++) {
+		uint32_t labelWidth = hud->MeasureString(miscLines[i].Label).X;
+		int labelX = miscColonX - (int)labelWidth;
+		hud->DrawString(labelX, miscLineY, miscLines[i].Label, 0xFFFFFF, 0xFF000000, 1, startFrame);
+		hud->DrawString(miscColonX, miscLineY, colonText, 0xFFFFFF, 0xFF000000, 1, startFrame);
+		hud->DrawString(miscValueX, miscLineY, miscLines[i].Value, miscLines[i].ValueColor, 0xFF000000, 1, startFrame);
+		miscLineY += lineSpacing;
 	}
 }
