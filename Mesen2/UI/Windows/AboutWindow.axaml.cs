@@ -70,7 +70,7 @@ namespace Mesen.Windows
 
 		private void OnCommitLinkTapped(object? sender, TappedEventArgs e)
 		{
-			ApplicationHelper.OpenBrowser("https://github.com/sengbin/Mesen-StudyComputer/commit/" + BuildSha);
+			ApplicationHelper.OpenBrowser("https://github.com/sengbin/Mesen-Plus/commit/" + BuildSha);
 		}
 	}
 
