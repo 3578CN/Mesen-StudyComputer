@@ -11,6 +11,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -56,7 +57,67 @@ namespace Mesen.ViewModels
 						startIndex = 3;
 					}
 					string updateData = startIndex == 0 ? Encoding.UTF8.GetString(jsonBytes) : Encoding.UTF8.GetString(jsonBytes, startIndex, jsonBytes.Length - startIndex);
-					updateInfo = (UpdateInfo?)JsonSerializer.Deserialize(updateData, typeof(UpdateInfo), MesenSerializerContext.Default);
+					// 解析 JSON，支持 ReleaseNotes 为字符串或字符串数组（数组每项一行）
+					try {
+						using(JsonDocument doc = JsonDocument.Parse(updateData)) {
+							JsonElement root = doc.RootElement;
+							var info = new UpdateInfo();
+
+							// 解析 LatestVersion（优先字符串）
+							if(root.TryGetProperty("LatestVersion", out JsonElement latestProp)) {
+								if(latestProp.ValueKind == JsonValueKind.String) {
+									string? verStr = latestProp.GetString();
+									if(!string.IsNullOrWhiteSpace(verStr) && Version.TryParse(verStr, out var ver)) {
+										info.LatestVersion = ver;
+									}
+								} else {
+									try {
+										info.LatestVersion = (Version?)JsonSerializer.Deserialize(latestProp.GetRawText(), typeof(Version), MesenSerializerContext.Default) ?? new Version();
+									} catch {
+										// 保持默认值
+									}
+								}
+							}
+
+							// 解析 ReleaseNotes，支持字符串或字符串数组
+							string changelog = string.Empty;
+							if(root.TryGetProperty("ReleaseNotes", out JsonElement rnProp)) {
+								if(rnProp.ValueKind == JsonValueKind.String) {
+									changelog = rnProp.GetString() ?? string.Empty;
+								} else if(rnProp.ValueKind == JsonValueKind.Array) {
+									var lines = new List<string>();
+									foreach(var item in rnProp.EnumerateArray()) {
+										if(item.ValueKind == JsonValueKind.String) {
+											lines.Add(item.GetString() ?? string.Empty);
+										} else {
+											lines.Add(item.GetRawText());
+										}
+									}
+									changelog = string.Join(Environment.NewLine, lines);
+								} else {
+									changelog = rnProp.GetRawText();
+								}
+							}
+							info.ReleaseNotes = changelog;
+
+							// 解析 Files
+							if(root.TryGetProperty("Files", out JsonElement filesProp) && filesProp.ValueKind == JsonValueKind.Array) {
+								try {
+									info.Files = (UpdateFileInfo[]?)JsonSerializer.Deserialize(filesProp.GetRawText(), typeof(UpdateFileInfo[]), MesenSerializerContext.Default) ?? Array.Empty<UpdateFileInfo>();
+								} catch {
+									info.Files = Array.Empty<UpdateFileInfo>();
+								}
+							} else {
+								info.Files = Array.Empty<UpdateFileInfo>();
+							}
+
+							updateInfo = info;
+						
+						}
+					} catch(Exception) {
+						// 回退到原有的反序列化方式以提高兼容性
+						updateInfo = (UpdateInfo?)JsonSerializer.Deserialize(updateData, typeof(UpdateInfo), MesenSerializerContext.Default);
+					}
 
 					if(
 						updateInfo == null ||
