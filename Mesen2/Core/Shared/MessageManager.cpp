@@ -37,6 +37,7 @@ std::unordered_map<string, string> MessageManager::_enResources = {
 	{ "EmulationMaximumSpeed", u8"最大速度" },
 	{ "EmulationSpeedPercent", u8"%1%" },
 	{ "FdsDiskInserted", u8"已插入磁盘 %1，侧 %2。" },
+	{ "FPS", u8"帧率" },
 	{ "Frame", u8"帧" },
 	{ "GameCrash", u8"游戏崩溃（%1）" },
 	{ "KeyboardModeDisabled", u8"键盘模式已禁用。" },

@@ -1,5 +1,7 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Shared/Video/VideoRenderer.h"
+#include <algorithm>
+#include <limits>
 #include "Shared/Video/VideoDecoder.h"
 #include "Shared/Interfaces/IRenderingDevice.h"
 #include "Shared/Emulator.h"
@@ -77,13 +79,33 @@ void VideoRenderer::RenderThread()
 		//Wait until a frame is ready, or until 32ms have passed (to allow HUD to update at ~30fps when paused)
 		bool forceRender = !_waitForRender.Wait(32);
 		if(_renderer) {
-			FrameInfo size = _emu->GetVideoDecoder()->GetBaseFrameInfo(true);
-			_scriptHudSurface.UpdateSize(size.Width * _scriptHudScale, size.Height * _scriptHudScale);
+			FrameInfo baseSize = _emu->GetVideoDecoder()->GetBaseFrameInfo(true);
+			_scriptHudSurface.UpdateSize(baseSize.Width * _scriptHudScale, baseSize.Height * _scriptHudScale);
 
-			size = GetEmuHudSize(size);
-			if(_emuHudSurface.UpdateSize(size.Width, size.Height)) {
+			FrameInfo virtualHudSize = GetEmuHudSize(baseSize);
+			static constexpr uint32_t HudResolutionScale = 2;
+			FrameInfo actualHudSize = {};
+			uint64_t scaledWidth = (uint64_t)virtualHudSize.Width * HudResolutionScale;
+			uint64_t scaledHeight = (uint64_t)virtualHudSize.Height * HudResolutionScale;
+			if(scaledWidth == 0) {
+				scaledWidth = 1;
+			}
+			if(scaledHeight == 0) {
+				scaledHeight = 1;
+			}
+			if(scaledWidth > std::numeric_limits<uint32_t>::max()) {
+				scaledWidth = std::numeric_limits<uint32_t>::max();
+			}
+			if(scaledHeight > std::numeric_limits<uint32_t>::max()) {
+				scaledHeight = std::numeric_limits<uint32_t>::max();
+			}
+			actualHudSize.Width = (uint32_t)scaledWidth;
+			actualHudSize.Height = (uint32_t)scaledHeight;
+
+			if(_emuHudSurface.UpdateSize(actualHudSize.Width, actualHudSize.Height)) {
 				_rendererHud->ClearScreen();
 			}
+			_rendererHud->SetVirtualResolution(virtualHudSize.Width, virtualHudSize.Height, actualHudSize.Width, actualHudSize.Height);
 
 			RenderedFrame frame;
 			{
@@ -91,13 +113,13 @@ void VideoRenderer::RenderThread()
 				frame = _lastFrame;
 			}
 
-			_inputHud->DrawControllers(size, frame.InputData);
+			_inputHud->DrawControllers(virtualHudSize, frame.InputData);
 			{
 				auto lock = _hudLock.AcquireSafe();
-				_systemHud->Draw(_rendererHud.get(), size.Width, size.Height);
+				_systemHud->Draw(_rendererHud.get(), virtualHudSize.Width, virtualHudSize.Height);
 			}
 			
-			_emuHudSurface.IsDirty = _rendererHud->Draw(_emuHudSurface.Buffer, size, {}, 0, {}, true);
+			_emuHudSurface.IsDirty = _rendererHud->Draw(_emuHudSurface.Buffer, actualHudSize, {}, 0, {}, true);
 			_scriptHudSurface.IsDirty = DrawScriptHud(frame);
 
 			if(forceRender || _needRedraw || _emuHudSurface.IsDirty || _scriptHudSurface.IsDirty) {

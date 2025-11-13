@@ -4,6 +4,7 @@
 #ifdef _WIN32
 #include "Shared/Video/WindowsTrueTypeFont.h"
 #include <limits>
+#include <cmath>
 #endif
 
 class DrawStringCommand : public DrawCommand
@@ -12,6 +13,7 @@ private:
 	int _x, _y, _color, _backColor;
 	int _maxWidth = 0;
 	string _text;
+	double _fontScale = 1.0;
 
 	//Taken from FCEUX's LUA code
 	static constexpr int _tabSpace = 4;
@@ -147,13 +149,17 @@ protected:
 		WindowsTrueTypeFont& font = WindowsTrueTypeFont::GetInstance();
 		font.EnsureReady();
 
-		const int lineHeight = std::max(1, font.GetLineHeight());
-		const int baselineOffset = font.GetBaselineOffset();
+		const double fontScale = _fontScale > 0.0 ? _fontScale : 1.0;
+		const int basePixelHeight = std::max(1, font.GetBasePixelHeight());
+		const int pixelHeight = std::max(1, (int)std::llround(basePixelHeight * fontScale));
+
+		const int lineHeight = std::max(1, (int)std::llround(font.GetLineHeight() * fontScale));
+		const int baselineOffset = (int)std::llround(font.GetBaselineOffset() * fontScale);
 		int baseline = currentY + baselineOffset;
 		int lineTop = baseline - baselineOffset;
 
 		const int wrapWidth = _maxWidth > 0 ? _maxWidth : std::numeric_limits<int>::max();
-		const int spaceAdvance = std::max(1, font.GetSpaceAdvance());
+		const int spaceAdvance = std::max(1, (int)std::llround(font.GetSpaceAdvance() * fontScale));
 		const int tabAdvance = std::max(1, spaceAdvance * _tabSpace);
 
 		const uint32_t fgRGB = _color & 0x00FFFFFF;
@@ -252,7 +258,7 @@ protected:
 				continue;
 			}
 
-			const WindowsTrueTypeFont::GlyphBitmap& glyph = font.GetGlyph(codepoint);
+			const WindowsTrueTypeFont::GlyphBitmap& glyph = font.GetGlyph(codepoint, pixelHeight);
 			int relative = currentX - startX;
 			if(relative > 0 && relative + glyph.Advance > wrapWidth) {
 				newLine();
@@ -395,8 +401,8 @@ protected:
 	}
 
 public:
-	DrawStringCommand(int x, int y, string text, int color, int backColor, int frameCount, int startFrame, int maxWidth = 0, bool overwritePixels = false) :
-		DrawCommand(startFrame, frameCount, true), _x(x), _y(y), _color(color), _backColor(backColor), _maxWidth(maxWidth), _text(text)
+	DrawStringCommand(int x, int y, string text, int color, int backColor, int frameCount, int startFrame, int maxWidth = 0, bool overwritePixels = false, double fontScale = 1.0) :
+		DrawCommand(startFrame, frameCount, true), _x(x), _y(y), _color(color), _backColor(backColor), _maxWidth(maxWidth), _text(text), _fontScale(fontScale)
 	{
 		//Invert alpha byte - 0 = opaque, 255 = transparent (this way, no need to specifiy alpha channel all the time)
 		_overwritePixels = overwritePixels;
@@ -404,14 +410,18 @@ public:
 		_backColor = (~backColor & 0xFF000000) | (backColor & 0xFFFFFF);
 	}
 
-	static TextSize MeasureString(string& text, uint32_t maxWidth = 0)
+	static TextSize MeasureString(string& text, uint32_t maxWidth = 0, double fontScale = 1.0)
 	{
 #ifdef _WIN32
 		WindowsTrueTypeFont& font = WindowsTrueTypeFont::GetInstance();
 		font.EnsureReady();
 
-		const int lineHeight = std::max(1, font.GetLineHeight());
-		const int spaceAdvance = std::max(1, font.GetSpaceAdvance());
+		const double effectiveScale = fontScale > 0.0 ? fontScale : 1.0;
+		const int basePixelHeight = std::max(1, font.GetBasePixelHeight());
+		const int pixelHeight = std::max(1, (int)std::llround(basePixelHeight * effectiveScale));
+
+		const int lineHeight = std::max(1, (int)std::llround(font.GetLineHeight() * effectiveScale));
+		const int spaceAdvance = std::max(1, (int)std::llround(font.GetSpaceAdvance() * effectiveScale));
 		const int tabAdvance = std::max(1, spaceAdvance * _tabSpace);
 		const bool hasWrap = maxWidth > 0;
 		const int wrapWidth = hasWrap ? (int)maxWidth : std::numeric_limits<int>::max();
@@ -501,7 +511,7 @@ public:
 				continue;
 			}
 
-			const WindowsTrueTypeFont::GlyphBitmap& glyph = font.GetGlyph(codepoint);
+			const WindowsTrueTypeFont::GlyphBitmap& glyph = font.GetGlyph(codepoint, pixelHeight);
 			if(hasWrap && x > 0 && x + glyph.Advance > wrapWidth) {
 				newLine();
 			}
@@ -521,6 +531,7 @@ public:
 		size.Y = (uint32_t)(y + lineHeight);
 		return size;
 #else
+		(void)fontScale;
 		uint32_t maxX = 0;
 		uint32_t x = 0;
 		uint32_t y = 0;

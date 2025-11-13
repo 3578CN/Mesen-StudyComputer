@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "pch.h"
 #include <thread>
 #include "Shared/SettingTypes.h"
@@ -88,4 +88,6 @@ public:
 	void AddRecordingSound(int16_t* soundBuffer, uint32_t sampleCount, uint32_t sampleRate);
 	void StopRecording();
 	bool IsRecording();
+	/// <summary>返回渲染线程使用的高分辨率调试HUD。</summary>
+	DebugHud* GetRendererHud() { return _rendererHud.get(); }
 };

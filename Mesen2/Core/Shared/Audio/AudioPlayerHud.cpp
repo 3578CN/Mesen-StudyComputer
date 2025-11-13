@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Shared/Audio/AudioPlayerHud.h"
 #include "Shared/Audio/SoundMixer.h"
 #include "Shared/Video/DebugHud.h"
@@ -53,7 +53,7 @@ void AudioPlayerHud::Draw(uint32_t frameCounter, double fps)
 	string position = FormatSeconds((uint32_t)trackInfo.Position);
 
 	string track = "Track: " + std::to_string(trackInfo.TrackNumber) + " / " + std::to_string(trackInfo.TrackCount);
-	TextSize size = DrawStringCommand::MeasureString(track);
+	TextSize size = _hud->MeasureString(track);
 	uint32_t trackPosX = 256 - size.X - 14;
 	_hud->DrawString(trackPosX, 218, track, 0xFFFFFF, 0, 1);
 

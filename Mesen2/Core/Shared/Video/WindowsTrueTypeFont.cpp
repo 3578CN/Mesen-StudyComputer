@@ -10,6 +10,7 @@
 #ifdef _WIN32
 
 #include "Shared/Video/WindowsTrueTypeFont.h"
+#include <cmath>
 
 #ifndef _WINDOWS_
 using HANDLE = void*;
@@ -122,9 +123,12 @@ WindowsTrueTypeFont::~WindowsTrueTypeFont()
 		if(_defaultFont) {
 			SelectObject(hdc, reinterpret_cast<HGDIOBJ>(_defaultFont));
 		}
-		if(_font) {
-			DeleteObject(reinterpret_cast<HGDIOBJ>(_font));
+		for(auto& entry : _fonts) {
+			if(entry.second) {
+				DeleteObject(reinterpret_cast<HGDIOBJ>(entry.second));
+			}
 		}
+		_fonts.clear();
 		DeleteDC(hdc);
 	}
 }
@@ -154,7 +158,7 @@ bool WindowsTrueTypeFont::Initialize()
 	}
 
 	for(const wchar_t* name : FontCandidates) {
-		if(CreateFontWithName(name)) {
+		if(CreateFontForHeight(name, _fontPixelHeight)) {
 			return true;
 		}
 	}
@@ -162,10 +166,14 @@ bool WindowsTrueTypeFont::Initialize()
 	return false;
 }
 
-bool WindowsTrueTypeFont::CreateFontWithName(const wchar_t* fontName)
+bool WindowsTrueTypeFont::CreateFontForHeight(const wchar_t* fontName, int pixelHeight)
 {
 	HDC hdc = reinterpret_cast<HDC>(_hdc);
-	HFONT font = CreateFontW(-_fontPixelHeight, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET,
+	if(pixelHeight <= 0) {
+		pixelHeight = _fontPixelHeight;
+	}
+
+	HFONT font = CreateFontW(-pixelHeight, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET,
 		OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, fontName);
 	if(!font) {
 		return false;
@@ -181,19 +189,38 @@ bool WindowsTrueTypeFont::CreateFontWithName(const wchar_t* fontName)
 		_defaultFont = previous;
 	}
 
-	bool metricsOk = UpdateFontMetrics();
+	bool metricsOk = true;
+	if(pixelHeight == _fontPixelHeight) {
+		metricsOk = UpdateFontMetrics();
+	}
+
 	if(!metricsOk) {
 		SelectObject(hdc, previous);
 		DeleteObject(reinterpret_cast<HGDIOBJ>(font));
 		return false;
 	}
 
-	if(_font) {
-		DeleteObject(reinterpret_cast<HGDIOBJ>(_font));
+	if(pixelHeight == _fontPixelHeight) {
+		for(auto& entry : _fonts) {
+			if(entry.second) {
+				DeleteObject(reinterpret_cast<HGDIOBJ>(entry.second));
+			}
+		}
+		_fonts.clear();
+		_glyphCache.clear();
+	} else {
+		auto existing = _fonts.find(pixelHeight);
+		if(existing != _fonts.end()) {
+			if(existing->second) {
+				DeleteObject(reinterpret_cast<HGDIOBJ>(existing->second));
+			}
+			_fonts.erase(existing);
+		}
 	}
 
-	_font = font;
-	_glyphCache.clear();
+	_fonts.emplace(pixelHeight, font);
+	SelectObject(hdc, previous);
+
 	return true;
 }
 
@@ -238,26 +265,53 @@ bool WindowsTrueTypeFont::UpdateFontMetrics()
 
 const WindowsTrueTypeFont::GlyphBitmap& WindowsTrueTypeFont::GetGlyph(uint32_t codepoint)
 {
+	return GetGlyph(codepoint, _fontPixelHeight);
+}
+
+const WindowsTrueTypeFont::GlyphBitmap& WindowsTrueTypeFont::GetGlyph(uint32_t codepoint, int pixelHeight)
+{
 	std::lock_guard<std::mutex> guard(_mutex);
 	if(!_initialized) {
 		return _missingGlyph;
 	}
 
-	auto it = _glyphCache.find(codepoint);
+	if(pixelHeight <= 0) {
+		pixelHeight = _fontPixelHeight;
+	}
+
+	uint64_t cacheKey = (static_cast<uint64_t>(static_cast<uint32_t>(pixelHeight)) << 32) | static_cast<uint64_t>(codepoint);
+	auto it = _glyphCache.find(cacheKey);
 	if(it != _glyphCache.end()) {
 		return it->second;
 	}
 
-	GlyphBitmap glyph = BuildGlyph(codepoint);
-	auto result = _glyphCache.emplace(codepoint, std::move(glyph));
+	void* fontHandle = GetFontHandle(pixelHeight);
+	if(!fontHandle) {
+		return _missingGlyph;
+	}
+
+	HDC hdc = reinterpret_cast<HDC>(_hdc);
+	HGDIOBJ previous = SelectObject(hdc, reinterpret_cast<HGDIOBJ>(fontHandle));
+	if(!previous) {
+		return _missingGlyph;
+	}
+
+	GlyphBitmap glyph = BuildGlyph(codepoint, pixelHeight);
+	SelectObject(hdc, previous);
+	auto result = _glyphCache.emplace(cacheKey, std::move(glyph));
 	return result.first->second;
 }
 
-WindowsTrueTypeFont::GlyphBitmap WindowsTrueTypeFont::BuildGlyph(uint32_t codepoint)
+WindowsTrueTypeFont::GlyphBitmap WindowsTrueTypeFont::BuildGlyph(uint32_t codepoint, int pixelHeight)
 {
 	GlyphBitmap glyph;
-	if(!_hdc || !_font) {
+	if(!_hdc) {
 		return _missingGlyph;
+	}
+
+	double scaleRatio = 1.0;
+	if(_fontPixelHeight > 0 && pixelHeight > 0) {
+		scaleRatio = (double)pixelHeight / (double)_fontPixelHeight;
 	}
 
 	UINT charCode = (codepoint <= 0xFFFF) ? static_cast<UINT>(codepoint) : static_cast<UINT>('?');
@@ -266,7 +320,7 @@ WindowsTrueTypeFont::GlyphBitmap WindowsTrueTypeFont::BuildGlyph(uint32_t codepo
 	DWORD required = GetGlyphOutlineW(reinterpret_cast<HDC>(_hdc), charCode, GGO_GRAY8_BITMAP, &metrics, 0, nullptr, &IdentityMat);
 	if(required == GDI_ERROR) {
 		if(codepoint != static_cast<uint32_t>('?')) {
-			return BuildGlyph(static_cast<uint32_t>('?'));
+			return BuildGlyph(static_cast<uint32_t>('?'), pixelHeight);
 		}
 		return _missingGlyph;
 	}
@@ -276,7 +330,7 @@ WindowsTrueTypeFont::GlyphBitmap WindowsTrueTypeFont::BuildGlyph(uint32_t codepo
 		glyph.Advance = static_cast<int>(metrics.gmBlackBoxX);
 	}
 	if(glyph.Advance == 0) {
-		glyph.Advance = _spaceAdvance;
+		glyph.Advance = std::max(1, (int)std::llround(_spaceAdvance * scaleRatio));
 	}
 
 	glyph.OffsetX = metrics.gmptGlyphOrigin.x;
@@ -304,6 +358,29 @@ WindowsTrueTypeFont::GlyphBitmap WindowsTrueTypeFont::BuildGlyph(uint32_t codepo
 	}
 
 	return glyph;
+}
+
+void* WindowsTrueTypeFont::GetFontHandle(int pixelHeight)
+{
+	if(pixelHeight <= 0) {
+		pixelHeight = _fontPixelHeight;
+	}
+
+	auto it = _fonts.find(pixelHeight);
+	if(it != _fonts.end()) {
+		return it->second;
+	}
+
+	for(const wchar_t* name : FontCandidates) {
+		if(CreateFontForHeight(name, pixelHeight)) {
+			auto created = _fonts.find(pixelHeight);
+			if(created != _fonts.end()) {
+				return created->second;
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 WindowsTrueTypeFont::GlyphBitmap WindowsTrueTypeFont::BuildFallbackGlyph() const

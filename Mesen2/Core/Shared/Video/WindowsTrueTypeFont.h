@@ -11,6 +11,8 @@
 
 #include "pch.h"
 #include <mutex>
+#include <unordered_map>
+#include <vector>
 
 class WindowsTrueTypeFont
 {
@@ -29,10 +31,12 @@ public:
 
 	bool EnsureReady();
 	const GlyphBitmap& GetGlyph(uint32_t codepoint);
+	const GlyphBitmap& GetGlyph(uint32_t codepoint, int pixelHeight);
 
 	int GetLineHeight() const;
 	int GetBaselineOffset() const;
 	int GetSpaceAdvance() const;
+	int GetBasePixelHeight() const { return _fontPixelHeight; }
 
 private:
 	WindowsTrueTypeFont();
@@ -42,21 +46,22 @@ private:
 	WindowsTrueTypeFont& operator=(const WindowsTrueTypeFont&) = delete;
 
 	bool Initialize();
-	bool CreateFontWithName(const wchar_t* fontName);
+	bool CreateFontForHeight(const wchar_t* fontName, int pixelHeight);
 	bool UpdateFontMetrics();
-	GlyphBitmap BuildGlyph(uint32_t codepoint);
+	GlyphBitmap BuildGlyph(uint32_t codepoint, int pixelHeight);
+	void* GetFontHandle(int pixelHeight);
 	GlyphBitmap BuildFallbackGlyph() const;
 
 	void* _hdc = nullptr;
-	void* _font = nullptr;
 	void* _defaultFont = nullptr;
+	std::unordered_map<int, void*> _fonts;
 
 	int _lineHeight = 0;
 	int _baseline = 0;
 	int _spaceAdvance = 0;
 	bool _initialized = false;
 
-	std::unordered_map<uint32_t, GlyphBitmap> _glyphCache;
+	std::unordered_map<uint64_t, GlyphBitmap> _glyphCache;
 	GlyphBitmap _missingGlyph;
 	std::mutex _mutex;
 	// 字体像素高度。

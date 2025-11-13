@@ -2,7 +2,7 @@
   "profiles": {
     "Mesen": {
       "commandName": "Project",
-      "commandLineArgs": "bbk_bios10.nes\r\n004.IMG",
+      "commandLineArgs": "BIOS20.NES",
       "workingDirectory": "C:\\Users\\LION\\OneDrive\\Desktop",
       "nativeDebugging": true
     }

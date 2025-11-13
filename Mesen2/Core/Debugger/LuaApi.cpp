@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "LuaApi.h"
 #include "Lua/lua.hpp"
 #include "Debugger/LuaCallHelper.h"
@@ -489,7 +489,7 @@ int LuaApi::MeasureString(lua_State* lua)
 	string text = l.ReadString();
 	checkminparams(1);
 
-	TextSize size = DrawStringCommand::MeasureString(text, maxWidth);
+	TextSize size = GetHud()->MeasureString(text, maxWidth);
 	lua_newtable(lua);
 	lua_pushintvalue(width, size.X);
 	lua_pushintvalue(height, size.Y);

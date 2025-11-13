@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Shared/Video/SystemHud.h"
 #include "Shared/Video/DebugHud.h"
 #include "Shared/Movies/MovieManager.h"
@@ -57,7 +57,7 @@ void SystemHud::DrawMessage(DebugHud* hud, MessageInfo &msg, uint32_t screenWidt
 	string text = "[" + msg.GetTitle() + "] " + msg.GetMessage();
 
 	int maxWidth = screenWidth - textLeftMargin;
-	TextSize size = DrawStringCommand::MeasureString(text, maxWidth);
+	TextSize size = hud->MeasureString(text, maxWidth);
 	lastHeight += size.Y;
 	DrawString(hud, screenWidth, text, textLeftMargin, screenHeight - lastHeight, opacity);
 }
@@ -78,8 +78,8 @@ void SystemHud::ShowFpsCounter(DebugHud* hud, uint32_t screenWidth, int lineNumb
 {
 	int yPos = 10 + 10 * lineNumber;
 
-	string fpsString = string("FPS: ") + std::to_string(_currentFPS); // +" / " + std::to_string(_currentRenderedFPS);
-	uint32_t length = DrawStringCommand::MeasureString(fpsString).X;
+	string fpsString = MessageManager::Localize("FPS") + ": " + std::to_string(_currentFPS); // +" / " + std::to_string(_currentRenderedFPS);
+	uint32_t length = hud->MeasureString(fpsString).X;
 	DrawString(hud, screenWidth, fpsString, screenWidth - 8 - length, yPos);
 }
 
@@ -98,7 +98,7 @@ void SystemHud::ShowGameTimer(DebugHud* hud, uint32_t screenWidth, int lineNumbe
 	ss << std::setw(2) << std::setfill('0') << seconds;
 
 	string text = ss.str();
-	uint32_t length = DrawStringCommand::MeasureString(text).X;
+	uint32_t length = hud->MeasureString(text).X;
 	DrawString(hud, screenWidth, ss.str(), screenWidth - 8 - length, yPos);
 }
 
@@ -108,7 +108,7 @@ void SystemHud::ShowFrameCounter(DebugHud* hud, uint32_t screenWidth, int lineNu
 	uint32_t frameCount = _emu->GetFrameCount();
 
 	string frameCounter = MessageManager::Localize("Frame") + ": " + std::to_string(frameCount);
-	uint32_t length = DrawStringCommand::MeasureString(frameCounter).X;
+	uint32_t length = hud->MeasureString(frameCounter).X;
 	DrawString(hud, screenWidth, frameCounter, screenWidth - 8 - length, yPos);
 }
 
@@ -118,7 +118,7 @@ void SystemHud::ShowLagCounter(DebugHud* hud, uint32_t screenWidth, int lineNumb
 	uint32_t count = _emu->GetLagCounter();
 
 	string lagCounter = MessageManager::Localize("Lag") + ": " + std::to_string(count);
-	uint32_t length = DrawStringCommand::MeasureString(lagCounter).X;
+	uint32_t length = hud->MeasureString(lagCounter).X;
 	DrawString(hud, screenWidth, lagCounter, screenWidth - 8 - length, yPos);
 }
 
