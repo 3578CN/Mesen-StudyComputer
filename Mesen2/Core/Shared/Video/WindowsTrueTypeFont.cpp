@@ -98,12 +98,6 @@ namespace
 	// 字体候选列表。
 	constexpr wchar_t const* FontCandidates[] = {
 		 L"Microsoft YaHei UI",
-		 L"Microsoft YaHei",
-		 L"SimSun",
-		 L"SimHei",
-		 L"DengXian",
-		 L"Arial Unicode MS",
-		 L"MS Gothic"
 	};
 }
 
