@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -30,6 +31,8 @@ namespace Mesen.ViewModels
 		public UpdateFileInfo? FileInfo => _fileInfo;
 
 		private UpdateFileInfo? _fileInfo;
+		// 用于取消正在进行的更新下载
+		private CancellationTokenSource? _updateCts;
 
 		public UpdatePromptViewModel(UpdateInfo updateInfo, UpdateFileInfo? file)
 		{
@@ -165,6 +168,17 @@ namespace Mesen.ViewModels
 			return null;
 		}
 
+		/// <summary>
+		/// 取消正在进行的自动更新下载。
+		/// 可被 UI 调用（例如绑定到“取消”按钮）。
+		/// </summary>
+		public void CancelUpdate()
+		{
+			if(_updateCts != null && !_updateCts.IsCancellationRequested) {
+				_updateCts.Cancel();
+			}
+		}
+
 		public async Task<bool> UpdateMesen(UpdatePromptWindow wnd)
 		{
 			if(_fileInfo == null) {
@@ -173,50 +187,70 @@ namespace Mesen.ViewModels
 
 			string downloadPath = Path.Combine(ConfigManager.BackupFolder, "Mesen." + LatestVersion.ToString(3));
 
-			using(var client = new HttpClient()) {
-				HttpResponseMessage response = await client.GetAsync(_fileInfo.DownloadUrl, HttpCompletionOption.ResponseHeadersRead);
-				response.EnsureSuccessStatusCode();
+			// 置入新的 CancellationTokenSource，以支持外部调用 CancelUpdate() 取消下载
+			_updateCts?.Dispose();
+			_updateCts = new CancellationTokenSource();
+			CancellationToken token = _updateCts.Token;
 
-				using Stream contentStream = await response.Content.ReadAsStreamAsync();
-				using MemoryStream memoryStream = new MemoryStream();
-				long? length = response.Content.Headers.ContentLength;
-				if(length == null || length == 0) {
-					return false;
-				}
+			try {
+				IsUpdating = true;
+				Progress = 0;
 
-				byte[] buffer = new byte[0x10000];
-				while(true) {
-					int byteCount = await contentStream.ReadAsync(buffer, 0, buffer.Length);
-					if(byteCount == 0) {
-						break;
+				using(var client = new HttpClient()) {
+					HttpResponseMessage response = await client.GetAsync(_fileInfo.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, token);
+					response.EnsureSuccessStatusCode();
+
+					using Stream contentStream = await response.Content.ReadAsStreamAsync();
+					using MemoryStream memoryStream = new MemoryStream();
+					long? length = response.Content.Headers.ContentLength;
+					if(length == null || length == 0) {
+						return false;
+					}
+
+					byte[] buffer = new byte[0x10000];
+					while(true) {
+						int byteCount = await contentStream.ReadAsync(buffer, 0, buffer.Length, token);
+						if(byteCount == 0) {
+							break;
+						} else {
+							await memoryStream.WriteAsync(buffer, 0, byteCount, token);
+							Dispatcher.UIThread.Post(() => {
+								Progress = (int)((double)memoryStream.Length / length * 100);
+							});
+						}
+					}
+
+					using SHA256 sha256 = SHA256.Create();
+					memoryStream.Position = 0;
+					string hash = BitConverter.ToString(sha256.ComputeHash(memoryStream)).Replace("-", "");
+					if(hash == _fileInfo.Hash) {
+						using ZipArchive archive = new ZipArchive(memoryStream);
+						foreach(var entry in archive.Entries) {
+							string entryPath = downloadPath + Path.GetExtension(entry.Name);
+							entry.ExtractToFile(entryPath, true);
+							downloadPath = entryPath;
+							break;
+						}
 					} else {
-						await memoryStream.WriteAsync(buffer, 0, byteCount);
+						// 校验失败，删除可能的临时文件并提示
+						try { File.Delete(downloadPath); } catch {}
 						Dispatcher.UIThread.Post(() => {
-							Progress = (int)((double)memoryStream.Length / length * 100);
+							MesenMsgBox.Show(wnd, "AutoUpdateInvalidFile", MessageBoxButtons.OK, MessageBoxIcon.Info, _fileInfo.Hash, hash);
 						});
+						return false;
 					}
 				}
 
-				using SHA256 sha256 = SHA256.Create();
-				memoryStream.Position = 0;
-				string hash = BitConverter.ToString(sha256.ComputeHash(memoryStream)).Replace("-", "");
-				if(hash == _fileInfo.Hash) {
-					using ZipArchive archive = new ZipArchive(memoryStream);
-					foreach(var entry in archive.Entries) {
-						downloadPath += Path.GetExtension(entry.Name);
-						entry.ExtractToFile(downloadPath, true);
-						break;
-					}
-				} else {
-					File.Delete(downloadPath);
-					Dispatcher.UIThread.Post(() => {
-						MesenMsgBox.Show(wnd, "AutoUpdateInvalidFile", MessageBoxButtons.OK, MessageBoxIcon.Info, _fileInfo.Hash, hash);
-					});
-					return false;
-				}
+				return UpdateHelper.LaunchUpdate(downloadPath);
+			} catch(OperationCanceledException) {
+				// 用户取消下载
+				Dispatcher.UIThread.Post(() => { Progress = 0; });
+				return false;
+			} finally {
+				IsUpdating = false;
+				_updateCts?.Dispose();
+				_updateCts = null;
 			}
-
-			return UpdateHelper.LaunchUpdate(downloadPath);
 		}
 	}
 

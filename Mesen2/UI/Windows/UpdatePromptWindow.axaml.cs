@@ -76,7 +76,12 @@ namespace Mesen.Windows
 
 		private void OnCancelClick(object sender, RoutedEventArgs e)
 		{
-			Close(false);
+			// 如果正在更新，则仅取消更新；否则关闭窗口
+			if(_model.IsUpdating) {
+				_model.CancelUpdate();
+			} else {
+				Close(false);
+			}
 		}
 	}
 }

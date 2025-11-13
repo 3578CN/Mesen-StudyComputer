@@ -37,7 +37,7 @@
 			</Grid.Styles>
 			<ProgressBar Margin="2" Maximum="100" Value="{Binding Progress}" ShowProgressText="True" IsVisible="{Binding IsUpdating}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 			<Button Grid.Column="1" Content="{l:Translate btnUpdate}" Click="OnUpdateClick" IsEnabled="{Binding !IsUpdating}" />
-			<Button Grid.Column="2" Content="{l:Translate btnCancel}" IsCancel="True" Click="OnCancelClick" IsEnabled="{Binding !IsUpdating}" />
+			<Button Grid.Column="2" Content="{l:Translate btnCancel}" IsCancel="True" Click="OnCancelClick" />
 		</Grid>
 
 		<c:OptionSection Header="{l:Translate lblReleaseNotes}" DockPanel.Dock="Top" Margin="5 15 0 0" />
