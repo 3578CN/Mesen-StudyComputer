@@ -65,7 +65,7 @@ namespace Mesen.Windows
 
 		private void OnMesenLinkTapped(object? sender, TappedEventArgs e)
 		{
-			ApplicationHelper.OpenBrowser("https://github.com/sengbin/Mesen-StudyComputer");
+			ApplicationHelper.OpenBrowser("https://Mesen.Plus");
 		}
 
 		private void OnCommitLinkTapped(object? sender, TappedEventArgs e)

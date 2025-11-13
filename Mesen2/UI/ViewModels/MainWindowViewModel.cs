@@ -27,7 +27,7 @@ namespace Mesen.ViewModels
 		[Reactive] public AudioPlayerViewModel? AudioPlayer { get; private set; }
 		[Reactive] public RecentGamesViewModel RecentGames { get; private set; }
 
-		[Reactive] public string WindowTitle { get; private set; } = "Mesen";
+		[Reactive] public string WindowTitle { get; private set; } = "Mesen Plus";
 		[Reactive] public Size RendererSize { get; set; }
 
 		[Reactive] public bool IsMenuVisible { get; set; }
@@ -86,7 +86,7 @@ namespace Mesen.ViewModels
 		private void UpdateWindowTitle()
 		{
 			// 设置窗口标题。
-			string title = "Mesen(StudyComputer)";
+			string title = "Mesen Plus";
 			string romName = RomInfo.GetRomName();
 			if(!string.IsNullOrWhiteSpace(romName)) {
 				title += " - " + romName;

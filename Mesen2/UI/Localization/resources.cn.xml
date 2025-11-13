@@ -838,10 +838,10 @@
 			<Control ID="btnCancel">取消</Control>
 		</Form>
 		<Form ID="AboutWindow">
-			<Control ID="wndTitle">关于 - Mesen(StudyComputer)</Control>
-			<Control ID="lblName">Mesen</Control>
+			<Control ID="wndTitle">关于</Control>
+			<Control ID="lblName">Mesen Plus</Control>
 			<Control ID="lblWebsite">网站：</Control>
-			<Control ID="lblLink">github.com/sengbin/Mesen-StudyComputer</Control>
+			<Control ID="lblLink">https://Mesen.Plus</Control>
 			<Control ID="lblVersion">版本：</Control>
 			<Control ID="lblBuildDate">构建日期：</Control>
 			<Control ID="lblCommitId">提交 ID：</Control>
@@ -877,7 +877,7 @@
 			<Control ID="btnCancel">取消</Control>
 		</Form>
 		<Form ID="UpdatePromptWindow">
-			<Control ID="wndTitle">Mesen 更新器</Control>
+			<Control ID="wndTitle">Mesen Plus 更新器</Control>
 			<Control ID="lblLatestVersion">最新版本：</Control>
 			<Control ID="lblInstalledVersion">已安装版本：</Control>
 			<Control ID="lblNewVersionAvailable">检测到可用的新版本</Control>
@@ -886,8 +886,8 @@
 			<Control ID="btnCancel">取消</Control>
 		</Form>
 		<Form ID="SetupWizardWindow">
-			<Control ID="wndTitle">Mesen(StudyComputer)</Control>
-			<Control ID="lblMesen">Mesen(StudyComputer) - 模拟器</Control>
+			<Control ID="wndTitle">Mesen Plus</Control>
+			<Control ID="lblMesen">Mesen Plus - 模拟器</Control>
 			<Control ID="lblConfigWizard">配置</Control>
 			<Control ID="lblInitialSetup">请花一点时间进行 Mesen 的初始设置。</Control>
 			<Control ID="lblStorageLocation">数据存储位置</Control>
@@ -1819,13 +1819,13 @@
 
 		<Message ID="CouldNotInstallRuntime">Visual Studio 运行时未能正确安装。</Message>
 		<Message ID="EmptyState">&lt;空&gt;</Message>
-		<Message ID="AutoUpdateNotSupported">你正在使用的 Mesen 版本不支持自动更新。请访问官网手动下载最新版本。</Message>
+		<Message ID="AutoUpdateNotSupported">你正在使用的 Mesen 版本不支持自动更新。请访问官网（https://Mesen.Plus）手动下载最新版本。</Message>
 		<Message ID="ErrorWhileCheckingUpdates">检查更新时发生错误。请检查网络连接后重试。&#xA;&#xA;错误详情：&#xA;{0}</Message>
 		<Message ID="AutoUpdateInvalidFile">下载的文件与预期不符。&#xA;&#xA;   期望 SHA256 签名：{0}&#xA;&#xA;   文件 SHA256 签名：{1}&#xA;&#xA;请访问官网手动下载最新版本。</Message>
 		<Message ID="FileNotFound">未找到文件：{0}</Message>
 		<Message ID="InvalidArgument">无效的参数：{0}</Message>
 
-		<Message ID="MesenUpToDate">你正在运行最新版本的 Mesen。</Message>
+		<Message ID="MesenUpToDate">你正在运行最新版本的 Mesen Plus</Message>
 		<Message ID="PatchAndReset">要为当前游戏打补丁并重置吗？</Message>
 		<Message ID="SelectRomIps">请为该补丁文件选择一个 ROM。</Message>
 		<Message ID="UnableToDownload">无法下载文件。请检查网络连接后重试。&#xA;&#xA;详细信息：&#xA;{0}</Message>
@@ -1833,7 +1833,7 @@
 		<Message ID="UnableToStartMissingDependencies">由于缺少依赖项，Mesen 无法启动。&#xA;&#xA;错误详情：&#xA;{0}</Message>
 		<Message ID="UnableToStartMissingFiles">由于缺少文件，Mesen 无法启动。&#xA;&#xA;错误：缺少 MesenCore.dll。</Message>
 		<Message ID="UnexpectedError">发生了意外错误。&#xA;&#xA;错误详情：&#xA;{0}</Message>
-		<Message ID="UpdateDownloadFailed">下载失败——文件似乎已损坏。请访问 Mesen 官网手动下载最新版本。</Message>
+		<Message ID="UpdateDownloadFailed">下载失败——文件似乎已损坏。请访问官网（https://Mesen.Plus）手动下载最新版本。</Message>
 		<Message ID="UpgradeSuccess">升级成功完成。</Message>
 		<Message ID="UpdaterNotFound">由于缺少文件，无法启动更新流程。</Message>
 		<Message ID="Net45NotFound">未找到 Microsoft .NET Framework 4.5。请前往微软官网下载安装最新版本后重试。</Message>
