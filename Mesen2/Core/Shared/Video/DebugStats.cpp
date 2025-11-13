@@ -31,7 +31,7 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	if(colonWidth == 0) {
 		colonWidth = 2;
 	}
-	const int valuePadding = 3;
+
 
 	struct StatLine {
 		std::string Label;
@@ -41,15 +41,17 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 
 	const int audioBoxLeft = 8;
 	const int audioBoxTop = 8;
-	const int audioBoxWidth = 115;
+	const int audioBoxWidth = 122;
+	const int boxGap = 8;
+	const int innerPadding = 3;
 	const int audioDataLines = 4;
-	int audioBoxHeight = std::max<int>(64, (int)lineHeight + 6 + audioDataLines * lineSpacing);
+	int audioBoxHeight = std::max<int>(64, 2 * innerPadding + (int)lineHeight + audioDataLines * lineSpacing);
 
-	const int videoBoxLeft = 132;
-	const int videoBoxTop = 8;
-	const int videoBoxWidth = 115;
+	const int videoBoxLeft = audioBoxLeft + audioBoxWidth + boxGap;
+	const int videoBoxTop = audioBoxTop;
+	const int videoBoxWidth = audioBoxWidth;
 	const int videoDataLines = 4;
-	int videoBoxHeight = std::max<int>(64, (int)lineHeight + 6 + videoDataLines * lineSpacing);
+	int videoBoxHeight = std::max<int>(64, 2 * innerPadding + (int)lineHeight + videoDataLines * lineSpacing);
 
 	int topRowHeight = std::max(audioBoxHeight, videoBoxHeight);
 
@@ -61,8 +63,8 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	hud->DrawRectangle(audioBoxLeft, audioBoxTop, audioBoxWidth, audioBoxHeight, 0x40000000, true, 1, startFrame);
 	hud->DrawRectangle(audioBoxLeft, audioBoxTop, audioBoxWidth, audioBoxHeight, 0xFFFFFF, false, 1, startFrame);
 
-	int audioTextY = audioBoxTop + 4;
-	int audioTextX = audioBoxLeft + 1;
+	int audioTextY = audioBoxTop + innerPadding;
+	int audioTextX = audioBoxLeft + innerPadding;
 	hud->DrawString(audioTextX, audioTextY, utf8::utf8::encode(L"音频统计"), 0xFFFFFF, 0xFF000000, 1, startFrame);
 	audioTextY += lineSpacing;
 
@@ -83,7 +85,7 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	}
 	int audioLabelBaseX = audioTextX;
 	int audioColonX = audioLabelBaseX + (int)audioLabelWidth;
-	int audioValueX = audioColonX + (int)colonWidth + valuePadding;
+	int audioValueX = audioColonX + (int)colonWidth;
 
 	int audioLineY = audioTextY;
 	for(const StatLine& line : audioLines) {
@@ -98,8 +100,9 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	hud->DrawRectangle(videoBoxLeft, videoBoxTop, videoBoxWidth, videoBoxHeight, 0x40000000, true, 1, startFrame);
 	hud->DrawRectangle(videoBoxLeft, videoBoxTop, videoBoxWidth, videoBoxHeight, 0xFFFFFF, false, 1, startFrame);
 
-	int videoTextY = videoBoxTop + 4;
-	hud->DrawString(134, videoTextY, utf8::utf8::encode(L"视频统计"), 0xFFFFFF, 0xFF000000, 1, startFrame);
+	int videoTextY = videoBoxTop + innerPadding;
+	int videoTextX = videoBoxLeft + innerPadding;
+	hud->DrawString(videoTextX, videoTextY, utf8::utf8::encode(L"视频统计"), 0xFFFFFF, 0xFF000000, 1, startFrame);
 	videoTextY += lineSpacing;
 
 	double totalDuration = 0;
@@ -139,9 +142,9 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	for(const StatLine& line : videoLines) {
 		videoLabelWidth = std::max<uint32_t>(videoLabelWidth, hud->MeasureString(line.Label).X);
 	}
-	int videoLabelBaseX = 134;
+	int videoLabelBaseX = videoTextX;
 	int videoColonX = videoLabelBaseX + (int)videoLabelWidth;
-	int videoValueX = videoColonX + (int)colonWidth + valuePadding;
+	int videoValueX = videoColonX + (int)colonWidth;
 
 	int videoLineY = videoTextY;
 	for(const StatLine& line : videoLines) {
@@ -154,8 +157,8 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	}
 
 	int secondRowTop = videoBoxTop + topRowHeight + 6;
-	hud->DrawRectangle(129, secondRowTop - 1, 122, 34, 0xFFFFFF, false, 1, startFrame);
-	hud->DrawRectangle(130, secondRowTop, 120, 32, 0x000000, true, 1, startFrame);
+	hud->DrawRectangle(videoBoxLeft, secondRowTop - 1, videoBoxWidth, 34, 0xFFFFFF, false, 1, startFrame);
+	hud->DrawRectangle(videoBoxLeft + 1, secondRowTop, videoBoxWidth - 2, 32, 0x000000, true, 1, startFrame);
 
 	double expectedFrameDelay = 1000 / emu->GetFps();
 
@@ -172,22 +175,23 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 		} else if(std::abs(duration - expectedFrameDelay) > 1) {
 			lineColor = 0xFFA500;
 		}
-		int graphBaseX = 130 + i * 2;
+		int graphBaseX = videoBoxLeft + 1 + i * 2;
 		int chartBaseY = secondRowTop + 50;
 		hud->DrawLine(graphBaseX, chartBaseY - (int)std::llround(duration * 2), graphBaseX + 2, chartBaseY - (int)std::llround(nextDuration * 2), lineColor, 1, startFrame);
 	}
 
-	const int miscBoxLeft = 8;
+	const int miscBoxLeft = audioBoxLeft;
 	const int miscBoxTop = secondRowTop;
-	const int miscBoxWidth = 115;
+	const int miscBoxWidth = audioBoxWidth;
 	const int miscDataLines = 2;
-	int miscBoxHeight = std::max<int>(40, (int)lineHeight + 4 + miscDataLines * lineSpacing);
+	int miscBoxHeight = std::max<int>(40, 2 * innerPadding + (int)lineHeight + miscDataLines * lineSpacing);
 
 	hud->DrawRectangle(miscBoxLeft, miscBoxTop, miscBoxWidth, miscBoxHeight, 0x40000000, true, 1, startFrame);
 	hud->DrawRectangle(miscBoxLeft, miscBoxTop, miscBoxWidth, miscBoxHeight, 0xFFFFFF, false, 1, startFrame);
 
-	int miscTextY = miscBoxTop + 3;
-	hud->DrawString(10, miscTextY, utf8::utf8::encode(L"杂项统计"), 0xFFFFFF, 0xFF000000, 1, startFrame);
+	int miscTextY = miscBoxTop + innerPadding;
+	int miscTextX = miscBoxLeft + innerPadding;
+	hud->DrawString(miscTextX, miscTextY, utf8::utf8::encode(L"杂项统计"), 0xFFFFFF, 0xFF000000, 1, startFrame);
 	miscTextY += lineSpacing;
 
 	RewindStats rewindStats = emu->GetRewindManager()->GetStats();
@@ -210,9 +214,9 @@ void DebugStats::DisplayStats(Emulator *emu, double lastFrameTime)
 	for(int i = 0; i < miscLineCount; i++) {
 		miscLabelWidth = std::max<uint32_t>(miscLabelWidth, hud->MeasureString(miscLines[i].Label).X);
 	}
-	int miscLabelBaseX = 10;
+	int miscLabelBaseX = miscTextX;
 	int miscColonX = miscLabelBaseX + (int)miscLabelWidth;
-	int miscValueX = miscColonX + (int)colonWidth + valuePadding;
+	int miscValueX = miscColonX + (int)colonWidth;
 
 	int miscLineY = miscTextY;
 	for(int i = 0; i < miscLineCount; i++) {
