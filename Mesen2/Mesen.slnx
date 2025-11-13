@@ -1,0 +1,52 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="PGO Optimize" />
+    <BuildType Name="PGO Profile" />
+    <BuildType Name="Release" />
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="Core/Core.vcxproj">
+    <BuildDependency Project="Lua/Lua.vcxproj" />
+    <BuildDependency Project="Utilities/Utilities.vcxproj" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="InteropDLL/InteropDLL.vcxproj">
+    <BuildDependency Project="Core/Core.vcxproj" />
+    <BuildDependency Project="Utilities/Utilities.vcxproj" />
+    <BuildDependency Project="Windows/Windows.vcxproj" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="Lua/Lua.vcxproj">
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="PGOHelper/PGOHelper.vcxproj">
+    <BuildDependency Project="InteropDLL/InteropDLL.vcxproj" />
+    <Build Solution="*|Any CPU" Project="false" />
+    <Build Solution="PGO Optimize|x64" Project="false" />
+  </Project>
+  <Project Path="SevenZip/SevenZip.vcxproj">
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="UI/UI.csproj">
+    <BuildDependency Project="InteropDLL/InteropDLL.vcxproj" />
+    <BuildType Solution="PGO Optimize|*" Project="Release" />
+    <BuildType Solution="PGO Profile|Any CPU" Project="Debug" />
+    <BuildType Solution="PGO Profile|x64" Project="Release" />
+    <Build Solution="PGO Optimize|x64" Project="false" />
+    <Build Solution="PGO Profile|x64" Project="false" />
+  </Project>
+  <Project Path="Utilities/Utilities.vcxproj">
+    <BuildDependency Project="SevenZip/SevenZip.vcxproj" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="Windows/Windows.vcxproj">
+    <BuildDependency Project="Core/Core.vcxproj" />
+    <BuildDependency Project="Utilities/Utilities.vcxproj" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Properties Name="Performance">
+    <Property Name="HasPerformanceSessions" Value="true" />
+  </Properties>
+</Solution>
