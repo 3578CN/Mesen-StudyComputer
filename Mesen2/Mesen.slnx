@@ -7,26 +7,26 @@
     <Platform Name="Any CPU" />
     <Platform Name="x64" />
   </Configurations>
-  <Project Path="Core/Core.vcxproj">
+  <Project Path="Core/Core.vcxproj" Id="78fef1a1-6df1-4cbb-a373-ae6fa7ce5ce0">
     <BuildDependency Project="Lua/Lua.vcxproj" />
     <BuildDependency Project="Utilities/Utilities.vcxproj" />
     <Build Solution="*|Any CPU" Project="false" />
   </Project>
-  <Project Path="InteropDLL/InteropDLL.vcxproj">
+  <Project Path="InteropDLL/InteropDLL.vcxproj" Id="37749bb2-fa78-4ec9-8990-5628fc0bba19">
     <BuildDependency Project="Core/Core.vcxproj" />
     <BuildDependency Project="Utilities/Utilities.vcxproj" />
     <BuildDependency Project="Windows/Windows.vcxproj" />
     <Build Solution="*|Any CPU" Project="false" />
   </Project>
-  <Project Path="Lua/Lua.vcxproj">
+  <Project Path="Lua/Lua.vcxproj" Id="b609e0a0-5050-4871-91d6-e760633bcdd1">
     <Build Solution="*|Any CPU" Project="false" />
   </Project>
-  <Project Path="PGOHelper/PGOHelper.vcxproj">
+  <Project Path="PGOHelper/PGOHelper.vcxproj" Id="38d74ee1-5276-4d24-aabc-104b912a27d2">
     <BuildDependency Project="InteropDLL/InteropDLL.vcxproj" />
     <Build Solution="*|Any CPU" Project="false" />
     <Build Solution="PGO Optimize|x64" Project="false" />
   </Project>
-  <Project Path="SevenZip/SevenZip.vcxproj">
+  <Project Path="SevenZip/SevenZip.vcxproj" Id="52c4ba3a-e699-4305-b23f-c9083fd07ab6">
     <Build Solution="*|Any CPU" Project="false" />
   </Project>
   <Project Path="UI/UI.csproj">
@@ -37,11 +37,11 @@
     <Build Solution="PGO Optimize|x64" Project="false" />
     <Build Solution="PGO Profile|x64" Project="false" />
   </Project>
-  <Project Path="Utilities/Utilities.vcxproj">
+  <Project Path="Utilities/Utilities.vcxproj" Id="b5330148-e8c7-46ba-b54e-69be59ea337d">
     <BuildDependency Project="SevenZip/SevenZip.vcxproj" />
     <Build Solution="*|Any CPU" Project="false" />
   </Project>
-  <Project Path="Windows/Windows.vcxproj">
+  <Project Path="Windows/Windows.vcxproj" Id="7761e790-b42c-4179-8550-8365ff9eb23e">
     <BuildDependency Project="Core/Core.vcxproj" />
     <BuildDependency Project="Utilities/Utilities.vcxproj" />
     <Build Solution="*|Any CPU" Project="false" />
