@@ -48,7 +48,14 @@ namespace Mesen.ViewModels
 					HttpResponseMessage resp = await client.GetAsync("https://cbcdn.cn/mesen/Services/v1/latestversion.json");
 					resp.EnsureSuccessStatusCode();
 					byte[] jsonBytes = await resp.Content.ReadAsByteArrayAsync();
-					string updateData = Encoding.UTF8.GetString(jsonBytes);
+					// 有些服务器会在 UTF-8 JSON 前加入 BOM (0xEF,0xBB,0xBF)，
+					// 直接以字节解码会把 BOM 转成字符串中的 U+FEFF，
+					// 导致 System.Text.Json 解析失败。这里检测并跳过 BOM。
+					int startIndex = 0;
+					if(jsonBytes.Length >= 3 && jsonBytes[0] == 0xEF && jsonBytes[1] == 0xBB && jsonBytes[2] == 0xBF) {
+						startIndex = 3;
+					}
+					string updateData = startIndex == 0 ? Encoding.UTF8.GetString(jsonBytes) : Encoding.UTF8.GetString(jsonBytes, startIndex, jsonBytes.Length - startIndex);
 					updateInfo = (UpdateInfo?)JsonSerializer.Deserialize(updateData, typeof(UpdateInfo), MesenSerializerContext.Default);
 
 					if(
