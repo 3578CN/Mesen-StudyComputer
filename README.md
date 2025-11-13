@@ -1,4 +1,5 @@
-## Mesen 学生电脑版模拟器
+## Mesen Plus 模拟器
+>增强版 Mesen 模拟器，支持步步高（BBK）软驱一号。
 
 本项目基于 Mesen2，并借鉴了钳工的 VirtuaNES 源码，对步步高（BBK）软驱一号的 Mapper 进行了大量适配与改造。原版 Mesen2 支持跨平台（Windows / Linux / macOS），但我本人尚未在 Linux 上进行过编译测试，目前主要在 Windows 环境下使用和验证。
 
