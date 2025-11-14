@@ -48,4 +48,4 @@
 - QQ：46427991
 
 > 本软件源码完全开源，欢迎前往 GitHub 克隆并提交，我们一起开发吧：
-> https://github.com/sengbin/Mesen-Plus
+> https://github.com/sengbin/Mesen-Plus/
