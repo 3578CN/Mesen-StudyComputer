@@ -1830,7 +1830,7 @@
 		<Message ID="SelectRomIps">请为该补丁文件选择一个 ROM。</Message>
 		<Message ID="UnableToDownload">无法下载文件。请检查网络连接后重试。&#xA;&#xA;详细信息：&#xA;{0}</Message>
 		<Message ID="UnableToStartMissingSdl">由于找不到 SDL2，Mesen 无法启动。请通过包管理器安装 SDL2 后重试。&#xA;&#xA;错误详情：&#xA;{0}</Message>
-		<Message ID="UnableToStartMissingDependencies">由于缺少依赖项，Mesen 无法启动。&#xA;&#xA;错误详情：&#xA;{0}</Message>
+		<Message ID="UnableToStartMissingDependencies">由于缺少依赖项，Mesen 无法启动。&#xA;&#xA;【尝试解决办法】&#xA;&#xA;删除 C:\Users\你的用户名\Documents\Mesen2 下的所有内容。&#xA;&#xA;错误详情：&#xA;{0}</Message>
 		<Message ID="UnableToStartMissingFiles">由于缺少文件，Mesen 无法启动。&#xA;&#xA;错误：缺少 MesenCore.dll。</Message>
 		<Message ID="UnexpectedError">发生了意外错误。&#xA;&#xA;错误详情：&#xA;{0}</Message>
 		<Message ID="UpdateDownloadFailed">下载失败——文件似乎已损坏。请访问官网（https://Mesen.Plus）手动下载最新版本。</Message>
